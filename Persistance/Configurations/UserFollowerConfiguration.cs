@@ -8,13 +8,13 @@ namespace Persistance.Configurations
     {
         public void Configure(EntityTypeBuilder<UserFollower> builder)
         {
-            builder.HasOne(x => x.TargetUser)
-                .WithMany(x => x.UserFollowerTargets)
-                .HasForeignKey(x => x.TargetId);
+            builder.HasOne(x => x.FollowingUser)
+                .WithMany(x => x.Followers)
+                .HasForeignKey(x => x.FollowingId);
 
-            builder.HasOne(x => x.SourceUser)
-                .WithMany(x => x.UserFollowerSources)
-                .HasForeignKey(x => x.SourceId);
-        }
+/*            builder.HasOne(x => x.FollowerUser)
+                .WithMany(x => x.Followers)
+                .HasForeignKey(x => x.FollowerId);
+*/        }
     }
 }

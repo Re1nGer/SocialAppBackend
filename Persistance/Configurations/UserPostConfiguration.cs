@@ -12,10 +12,6 @@ namespace Persistance.Configurations
             builder.HasOne(x => x.User)
                 .WithMany(x => x.UserPosts)
                 .HasForeignKey(x => x.UserId);
-
-            builder.HasOne(x => x.SenderUser)
-                .WithMany(x => x.UserPostSenders)
-                .HasForeignKey(x => x.SenderId);
         }
     }
 }
