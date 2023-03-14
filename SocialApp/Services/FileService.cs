@@ -1,6 +1,7 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Driver;
 using SocialApp.Models;
+using System.Linq.Expressions;
 
 namespace SocialApp.Services
 {
@@ -12,6 +13,17 @@ namespace SocialApp.Services
         {
             var database = client.GetDatabase("mydatabase");
             _collection = database.GetCollection<FileDocument>("files");
+        }
+
+        public List<FileDocument> FilterByField(Expression<Func<FileDocument, object>> fieldSelector, int value)
+        {
+            var filter = Builders<FileDocument>.Filter.Eq(fieldSelector, value);
+
+            return _collection.Find(filter).ToList();
+        }
+        public IQueryable<FileDocument> Where(Expression<Func<FileDocument, bool>> predicate)
+        {
+            return _collection.AsQueryable().Where(predicate);
         }
 
         public async Task<FileDocument> GetByIdAsync(string id)

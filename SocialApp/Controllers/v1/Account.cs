@@ -1,15 +1,9 @@
-﻿using Firebase.Auth;
-using FirebaseAdmin;
-using FirebaseAdmin.Auth;
-using Google.Apis.Auth;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Persistance;
-using SocialApp.Models;
 using SocialApp.Services;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Firebase.Auth;
+using Microsoft.EntityFrameworkCore;
 
 namespace SocialApp.Controllers.v1
 {
@@ -26,6 +20,11 @@ namespace SocialApp.Controllers.v1
             _context = context;
         }
 
+        private string GetUserId()
+        {
+            return User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value ?? "";
+        }
+
         [HttpPost("signin")]
         public async Task<IActionResult> SignIn([FromBody] SignUpRequest request)
         {
@@ -35,21 +34,28 @@ namespace SocialApp.Controllers.v1
             {
                 var authLink = await provider.SignInWithEmailAndPasswordAsync(request.Email, request.Password);
                 //authLink.
+                //var user = await provider.GetUserAsync(authLink);
 
-                var accessToken = JwtService.GenerateJwtToken(Array.Empty<Claim>(), 30);
+                var user = await _context.Users.FirstOrDefaultAsync(item => item.Email == authLink.User.Email);
+
+                var claims = new List<Claim>() {  new Claim("UserId", user.Id.ToString()) }.ToArray();
+
+                var accessToken = JwtService.GenerateJwtToken(claims, 30);
 
                 var refreshToken = JwtService.GenerateJwtToken(Array.Empty<Claim>(), 60);
 
-                return Ok(new { token = accessToken, refreshToken = refreshToken });
+                HttpContext.Response.Cookies.Append("RefreshToken", refreshToken);
 
-            } catch (Firebase.Auth.FirebaseAuthException ex)
+                return Ok(new { token = accessToken });
+
+            } catch (FirebaseAuthException ex)
             {
                 return BadRequest(ex.ResponseData);
             }
         }
 
         [HttpPost("signup")]
-        public async Task<IActionResult> SignUp([FromBody] SignUpRequest request)
+        public async Task<IActionResult> SignUp([FromBody] SignUpRequest request, CancellationToken token)
         {
             FirebaseAuthProvider provider = new FirebaseAuthProvider(new FirebaseConfig(ApiKey));
 
@@ -57,14 +63,28 @@ namespace SocialApp.Controllers.v1
             {
                 var authLink = await provider.CreateUserWithEmailAndPasswordAsync(request.Email, request.Password);
 
-                var accessToken = JwtService.GenerateJwtToken(Array.Empty<Claim>(), 30);
+                var user = new Domain.Entities.User
+                {
+                    Email = request.Email,
+                    Username = request.Email,
+                    RegisteredAt = DateTime.UtcNow,
+                };
+
+                await _context.Users.AddAsync(user, token);
+
+                var claims = new List<Claim>() { new Claim("UserId", user.Id.ToString()) }.ToArray();
+
+                var accessToken = JwtService.GenerateJwtToken(claims, 30);
 
                 var refreshToken = JwtService.GenerateJwtToken(Array.Empty<Claim>(), 60);
 
+                HttpContext.Response.Cookies.Append("RefreshToken", refreshToken);
 
-                return Ok(new { token = accessToken, refreshToken = refreshToken });
+                await _context.SaveChangesAsync(token);
 
-            } catch (Firebase.Auth.FirebaseAuthException ex)
+                return Ok(new { token = accessToken });
+
+            } catch (FirebaseAuthException ex)
             {
                 return BadRequest(ex.ResponseData);
             }
@@ -74,46 +94,56 @@ namespace SocialApp.Controllers.v1
         //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> RefreshToken([FromBody] SignUpRequest request)
         {
-            FirebaseAuthProvider provider = new FirebaseAuthProvider(new FirebaseConfig(ApiKey));
-            //provider.RefreshAuthAsync
-
-            //Firebase.Auth.FirebaseAuth auth = new Firebase.Auth.FirebaseAuth();
-
-            //var link = await provider.RefreshAuthAsync(auth);
-
-            string bearerToken = HttpContext.Request.Cookies["RefreshToken"];
-
-            string token = bearerToken.Substring("Bearer ".Length);
-
-            //var instance = FirebaseAdmin.Auth.FirebaseAuth.GetAuth(_firebaseApp);
-            
-            //var firebaseToken = instance.VerifyIdTokenAsync(token, true);
-
-            //provider.SignInWithGoogleIdTokenAsync
-
-            //var user = await provider.GetUserAsync(token);
-            //var newToken = user.
-            //var newToken = await provider.SignInWithEmailAndPasswordAsync();
-            //await instance.Re
-
             try
             {
-                //var authLink = await provider.RefreshAuthAsync(request.Email, request.Password);
+                //TODO: Revoke prev refresh token
 
-                return Ok(new { token = "" });
+                string bearerToken = HttpContext.Request.Cookies["RefreshToken"];
 
-            } catch (Firebase.Auth.FirebaseAuthException ex)
+                string token = bearerToken.Substring("Bearer ".Length);
+
+                var tokenValid = JwtService.ValidateJwtToken(token);
+
+                if (tokenValid is null) return Forbid();
+
+                var claims = new List<Claim>() { new Claim("UserId", GetUserId()) }.ToArray();
+
+                var newAccessToken = JwtService.GenerateJwtToken(claims, 30);
+
+                var newRefreshToken = JwtService.GenerateJwtToken(Array.Empty<Claim>(), 60);
+
+                HttpContext.Response.Cookies.Append("RefreshToken", newRefreshToken);
+
+                return Ok(new { token = newAccessToken });
+
+            } catch (FirebaseAuthException ex)
             {
                 return BadRequest(ex.ResponseData);
             }
         }
-        private IEnumerable<Claim>ToClaims(IReadOnlyDictionary<string, object> claims)
+
+        [HttpPost("revoke")]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> Logout()
         {
-            return new List<Claim> {
-                new Claim("id", claims["user_id"].ToString()),
-                new Claim ("email", claims["email"].ToString()),
-                new Claim("time", claims["auth_time"].ToString()),
-            };
+            try
+            {
+                //TODO: Revoke prev refresh token
+
+                string bearerToken = HttpContext.Request.Cookies["RefreshToken"];
+
+                string token = bearerToken.Substring("Bearer ".Length);
+
+                var tokenValid = JwtService.ValidateJwtToken(token);
+
+                if (tokenValid is null) return Forbid();
+
+                return Ok();
+
+            } catch (FirebaseAuthException ex)
+            {
+                return BadRequest(ex.ResponseData);
+            }
         }
 
     }
