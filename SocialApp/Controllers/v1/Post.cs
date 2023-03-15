@@ -29,7 +29,7 @@ namespace SocialApp.Controllers.v1
         }
 
         [HttpPost("/post")]
-        public async Task<IActionResult> AddPost([FromForm] CreatePostRequest request)
+        public async Task<IActionResult> AddPost([FromForm] CreatePostRequest request, CancellationToken cancellationToken)
         {
             var sanitizer = new HtmlSanitizer();
 
@@ -46,7 +46,9 @@ namespace SocialApp.Controllers.v1
                     UserId = userId
                 };
 
-                await _context.UserPosts.AddAsync(postModel);
+                await _context.UserPosts.AddAsync(postModel, cancellationToken);
+
+                await _context.SaveChangesAsync(cancellationToken);
 
                 using (var memoryStream = new MemoryStream())
                 {
@@ -57,12 +59,11 @@ namespace SocialApp.Controllers.v1
 
                         Filename = request.Image.FileName,
                         Data = memoryStream.ToArray(),
-                        UserId = userId
+                        UserId = userId,
+                        PostId = postModel.Id
                     };
 
                     await _fileService.InsertAsync(document);
-
-                    await _context.SaveChangesAsync();
 
                     return Ok();
                 }
@@ -88,7 +89,7 @@ namespace SocialApp.Controllers.v1
             {
                 Id =  item.Id,
                 HtmlContent = item.Message,
-                ImgSrc = Convert.ToBase64String(files.FirstOrDefault(image => image.UserId == int.Parse(GetUserId())).Data),
+                ImgSrc = Convert.ToBase64String(files.FirstOrDefault(image => image.PostId == item.Id).Data),
             });
 
             return Ok(model);
@@ -110,7 +111,6 @@ namespace SocialApp.Controllers.v1
 
     public class CreatePostRequest
     {
-        public string Title { get; set; }
         public string HtmlContent { get; set; }
         public IFormFile Image { get; set; }
     } 
