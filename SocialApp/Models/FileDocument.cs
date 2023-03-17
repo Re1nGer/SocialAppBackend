@@ -10,6 +10,7 @@ namespace SocialApp.Models
         public int UserId { get; set; }
         public int PostId { get; set; } 
         public string Filename { get; set; }
-        public byte[] Data { get; set; }
+        public byte[] Image { get; set; }
+        public byte[] LowResolutionImage { get; set; }
     }
 }

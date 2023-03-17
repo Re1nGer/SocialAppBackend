@@ -9,5 +9,7 @@ namespace Domain.Entities
         public string Message { get; set; } 
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }    
+        public virtual List<int>? CommentIds { get; set; }
+        public virtual List<Comment>? Comments { get; set; }
     }
 }

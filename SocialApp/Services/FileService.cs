@@ -38,10 +38,10 @@ namespace SocialApp.Services
             await _collection.InsertOneAsync(document);
         }
 
-        public async Task ReplaceAsync(FileDocument document)
+        public async Task<FileDocument> GetFileByPostIdAsync(int postId)
         {
-            var filter = Builders<FileDocument>.Filter.Eq(d => d.Id, document.Id);
-            await _collection.ReplaceOneAsync(filter, document);
+            var filter = Builders<FileDocument>.Filter.Eq(d => d.PostId, postId);
+            return await _collection.Find(filter).FirstOrDefaultAsync();
         }
 
         public async Task DeleteAsync(string id)
