@@ -11,6 +11,7 @@ namespace Persistance
             services.AddDbContext<ApplicationDbContext>(options =>
             {
                 options.UseNpgsql(configuration.GetConnectionString("ApplicationContext"));
+                options.EnableSensitiveDataLogging(true).EnableDetailedErrors(true);
             });
 
             return services;

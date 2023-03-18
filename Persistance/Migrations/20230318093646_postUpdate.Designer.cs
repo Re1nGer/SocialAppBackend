@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Persistance;
@@ -12,9 +13,10 @@ using Persistance;
 namespace Persistance.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230318093646_postUpdate")]
+    partial class postUpdate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -41,10 +43,13 @@ namespace Persistance.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("PostId")
+                    b.Property<int>("PostId")
                         .HasColumnType("integer");
 
                     b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("UserPostId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Username")
@@ -53,7 +58,7 @@ namespace Persistance.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PostId");
+                    b.HasIndex("UserPostId");
 
                     b.ToTable("UserComments");
                 });
@@ -69,15 +74,18 @@ namespace Persistance.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("PostId")
+                    b.Property<int>("PostId")
                         .HasColumnType("integer");
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("UserPostId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("PostId");
+                    b.HasIndex("UserPostId");
 
                     b.ToTable("UserLikes");
                 });
@@ -228,20 +236,16 @@ namespace Persistance.Migrations
 
             modelBuilder.Entity("Domain.Entities.Comment", b =>
                 {
-                    b.HasOne("Domain.Entities.UserPost", "UserPost")
+                    b.HasOne("Domain.Entities.UserPost", null)
                         .WithMany("Comments")
-                        .HasForeignKey("PostId");
-
-                    b.Navigation("UserPost");
+                        .HasForeignKey("UserPostId");
                 });
 
             modelBuilder.Entity("Domain.Entities.Like", b =>
                 {
-                    b.HasOne("Domain.Entities.UserPost", "UserPost")
+                    b.HasOne("Domain.Entities.UserPost", null)
                         .WithMany("Likes")
-                        .HasForeignKey("PostId");
-
-                    b.Navigation("UserPost");
+                        .HasForeignKey("UserPostId");
                 });
 
             modelBuilder.Entity("Domain.Entities.UserFollower", b =>
