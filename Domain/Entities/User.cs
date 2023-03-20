@@ -17,7 +17,7 @@ namespace Domain.Entities
         public ICollection<UserMessage>? UserMessageTargets { get; set; }
         public ICollection<UserPost>? UserPosts { get; set; }
         public ICollection<UserFollower>? Followers { get; set; }
-        //public ICollection<UserPost>? UserPostSenders { get; set; }
-
+        public ICollection<UserRequest>? UserRequests { get; set; }
+        public ICollection<UserReceivingRequest>? UserReceivingRequests { get; set; }
     }
 }
