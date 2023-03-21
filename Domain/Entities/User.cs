@@ -19,5 +19,6 @@ namespace Domain.Entities
         public ICollection<UserFollower>? Followers { get; set; }
         public ICollection<UserRequest>? UserRequests { get; set; }
         public ICollection<UserReceivingRequest>? UserReceivingRequests { get; set; }
+        public ICollection<UserBlocked> UsersBlocked { get; set; }
     }
 }
