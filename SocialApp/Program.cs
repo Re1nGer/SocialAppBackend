@@ -62,6 +62,8 @@ builder.Services.AddSingleton<IMongoClient>(new MongoClient(connectionString));
 
 builder.Services.AddTransient<FileService>();
 
+builder.Services.AddTransient<UserFileService>();
+
 builder.Services.AddTransient<AuthServices>();
 
 var app = builder.Build();

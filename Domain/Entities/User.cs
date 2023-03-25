@@ -9,6 +9,7 @@ namespace Domain.Entities
         public string Username { get; set; }
         public string Email { get; set; }   
         public string? Picture { get; set; }
+        public string? ImageId { get; set; }
         public DateTime RegisteredAt { get; set; }
         public DateTime? LastLogin { get; set; } 
         public string? Profile { get; set; }
