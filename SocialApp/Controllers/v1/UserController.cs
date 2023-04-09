@@ -31,11 +31,20 @@ namespace SocialApp.Controllers.v1
         }
 
         [HttpGet("list")]
-        public async Task<IActionResult> GetUserList([FromQuery] string q)
+        public async Task<IActionResult> GetUserList([FromQuery] string? q)
         {
             var userList = _context.Users.AsQueryable();
 
             userList = userList.Where(item => item.Email.Contains(q));  
+
+            var files = _fileService.Where(item => userList.Any(user => user.Id == item.UserId)).ToList();
+
+            var model = userList.Select(item => new User
+            {
+                Id = item.Id,
+                Picture = Convert.ToBase64String(files.FirstOrDefault(file => file.UserId == item.Id).UserLowResolutionImage),
+                Email = item.Email,
+            });
 
             return Ok(await userList.ToListAsync());
         }

@@ -108,16 +108,21 @@ namespace SocialApp.Controllers.v1
             
             var files = _fileService.Where(item => item.UserId == int.Parse(GetUserId())).ToList();
 
-            var model = userPosts.Select(item => new PostModel
+            if (userPosts.Any())
             {
-                Id =  item.Id,
-                HtmlContent = item.Message,
-                ImgSrc = Convert.ToBase64String(files.FirstOrDefault(image => image.PostId == item.Id).LowResolutionImage),
-                CommentCount = item.Comments is null ? 0 : item.Comments.Count,
-                LikeCount = item.Likes is null ? 0 : item.Likes.Count,
-            });
+                var model = userPosts.Select(item => new PostModel
+                {
+                    Id = item.Id,
+                    HtmlContent = item.Message,
+                    ImgSrc = files.Any(image => image.PostId == item.Id) ? Convert.ToBase64String(files.FirstOrDefault(image => image.PostId == item.Id).LowResolutionImage) : null,
+                    CommentCount = item.Comments is null ? 0 : item.Comments.Count,
+                    LikeCount = item.Likes is null ? 0 : item.Likes.Count,
+                });
 
-            return Ok(model);
+                return Ok(model);
+            }
+            else
+                return Ok();
         }
 
         [HttpGet("{id}")]
@@ -140,7 +145,6 @@ namespace SocialApp.Controllers.v1
             {
                 Id =  userPost.Id,
                 HtmlContent = userPost.Message,
-                //ImgSrc = Convert.ToBase64String(file.Image),
                 LikeCount = likeCount,
                 CommentCount = commentCount,
             };
@@ -190,6 +194,40 @@ namespace SocialApp.Controllers.v1
             return Ok(src);
         }
 
+        [HttpPost("test")]
+        public async Task<IActionResult> Test([FromForm] TestRequestModel test)
+        {
+            byte[] testArray;
+
+            using (var stream = new MemoryStream())
+            {
+                await test.Test.CopyToAsync(stream);
+                testArray = stream.ToArray();
+            }
+
+            var document = new FileDocument
+            {
+
+                Filename = test.Test.FileName,
+                Image = testArray,
+                PostId = 10
+            };
+
+            await _fileService.InsertAsync(document);
+
+            return Ok();
+        }
+
+        [HttpGet("test")]
+        public async Task<IActionResult> Test()
+        {
+            var file = await _fileService.GetFileByPostIdAsync(10);
+
+            if (file is null)
+                return Ok();
+
+            return Ok(new { test = file.Image, fileName=file.Filename, fileType=$"image/{GetFileExtension(file.Filename)}" });
+        }
         
         private bool IsImage(IFormFile file)
         {
@@ -225,7 +263,6 @@ namespace SocialApp.Controllers.v1
 
             return fileName.Substring(lastDotIndex + 1);
         }
-
     }
     public class PostModel
     {
@@ -234,6 +271,10 @@ namespace SocialApp.Controllers.v1
         public string ImgSrc { get; set; }
         public int LikeCount { get; set; }
         public int CommentCount { get; set; }
+    }
+    public class TestRequestModel
+    {
+        public IFormFile Test { get; set; }
     }
 
     public class ErrorModel
