@@ -35,16 +35,24 @@ namespace SocialApp.Controllers.v1
         {
             var userList = _context.Users.AsQueryable();
 
-            userList = userList.Where(item => item.Email.Contains(q));  
+            userList = userList.Where(item => item.Email.Contains(q));
 
-            var files = _fileService.Where(item => userList.Any(user => user.Id == item.UserId)).ToList();
+            var fileList = new List<UserDocument>();
 
-            var model = userList.Select(item => new User
+            var files = _fileService.GetAll();
+
+            foreach(var user in userList)
             {
-                Id = item.Id,
-                Picture = Convert.ToBase64String(files.FirstOrDefault(file => file.UserId == item.Id).UserLowResolutionImage),
-                Email = item.Email,
-            });
+
+                foreach(var file in files)
+                {
+                    if (user.Id == file.UserId)
+                    {
+                        user.Picture = Convert.ToBase64String(file.UserLowResolutionImage);
+                    }
+                }
+
+            }
 
             return Ok(await userList.ToListAsync());
         }
@@ -95,19 +103,21 @@ namespace SocialApp.Controllers.v1
             }
 
             UserDocument userImage = new UserDocument();
+            var imageId = MongoDB.Bson.ObjectId.GenerateNewId();
 
             if (user?.ImageId is not null)
             {
-                await _fileService.DeleteAsync(userImage.Id.ToString());
+                await _fileService.DeleteAsync(user.ImageId);
                 //userImage = await _fileService.GetByIdAsync(user.ImageId);
                 userImage.UserLowResolutionImage = lowResBytes;
+                userImage.UserId = userId;
+                user.ImageId = imageId.ToString();
+                userImage.UserImageName = request.Image.FileName;
                 userImage.UserImage = highResBytes;
                 await _fileService.InsertAsync(userImage);
             }
             else
             {
-                var imageId = MongoDB.Bson.ObjectId.GenerateNewId();
-
 
                 var newUserImage = new UserDocument
                 {
@@ -127,6 +137,8 @@ namespace SocialApp.Controllers.v1
                 await _fileService.InsertAsync(newUserImage);
 
             }
+
+            _context.Users.Update(user);
                 
             await _context.SaveChangesAsync();
 
