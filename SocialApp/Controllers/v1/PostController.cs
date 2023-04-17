@@ -136,7 +136,7 @@ namespace SocialApp.Controllers.v1
                 .AsNoTrackingWithIdentityResolution()
                 .ToListAsync(token);
             
-            var files = _fileService.Where(item => item.UserId == int.Parse(GetUserId())).ToList();
+            var files = _fileService.Where(item => item.UserId == userId).ToList();
 
             if (userPosts.Any())
             {
@@ -151,7 +151,7 @@ namespace SocialApp.Controllers.v1
 
                 return Ok(model);
             }
-            return Ok();
+            return Ok(new object[] {});
         }
 
         [HttpGet("{id}")]

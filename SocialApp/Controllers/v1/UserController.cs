@@ -98,7 +98,27 @@ namespace SocialApp.Controllers.v1
             }
 
             return Ok(new { username = user.Username });
+        }
 
+        [HttpGet("profileimage")]
+        public async Task<IActionResult> GetProfileImageByUserId()
+        {
+            var userId = int.Parse(GetUserId());
+
+            var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId);
+
+            var userImage = await _fileService.GetFileByUserIdAsync(userId);
+
+            if (userImage is not null)
+            {
+                var base64StringLowRes = Convert.ToBase64String(userImage.UserLowResolutionImage);
+
+                var lowResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64StringLowRes}";
+
+                return Ok(new { lowResUserImageSrc = lowResSrc });
+            }
+
+            return Ok(new { lowResUserImageSrc = "" });
         }
 
         [HttpPut("image")]
