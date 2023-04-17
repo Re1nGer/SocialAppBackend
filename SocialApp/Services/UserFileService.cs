@@ -27,6 +27,11 @@ namespace SocialApp.Services
             return _collection.AsQueryable().Where(predicate);
         }
 
+        public List<UserDocument> GetAll()
+        {
+            return _collection.AsQueryable().ToList();
+        }
+
         public async Task<UserDocument> GetByIdAsync(string id)
         {
             var objectId = new ObjectId(id);
