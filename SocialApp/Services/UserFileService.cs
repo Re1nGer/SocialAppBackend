@@ -50,10 +50,9 @@ namespace SocialApp.Services
             return await _collection.Find(filter).FirstOrDefaultAsync();
         }
 
-        public async Task DeleteAsync(string id)
+        public async Task DeleteAsync(int userid)
         {
-            var objectId = new ObjectId(id);
-            var filter = Builders<UserDocument>.Filter.Eq(d => d.Id, objectId);
+            var filter = Builders<UserDocument>.Filter.Eq(d => d.UserId, userid);
             await _collection.DeleteOneAsync(filter);
         }
     }

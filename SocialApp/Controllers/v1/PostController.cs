@@ -121,8 +121,37 @@ namespace SocialApp.Controllers.v1
 
                 return Ok(model);
             }
-            else
-                return Ok();
+            return Ok();
+        }
+
+        [HttpGet("{userId}/list")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> GetPostsByUserId(int userId, CancellationToken token)
+        {
+            var userPosts = await _context.UserPosts
+                .Include(item => item.Comments)
+                .Include(item => item.Likes)
+                .Where(item => item.UserId == userId)
+                .AsSplitQuery()
+                .AsNoTrackingWithIdentityResolution()
+                .ToListAsync(token);
+            
+            var files = _fileService.Where(item => item.UserId == int.Parse(GetUserId())).ToList();
+
+            if (userPosts.Any())
+            {
+                var model = userPosts.Select(item => new PostModel
+                {
+                    Id = item.Id,
+                    HtmlContent = item.Message,
+                    ImgSrc = files.Any(image => image.PostId == item.Id) ? Convert.ToBase64String(files.FirstOrDefault(image => image.PostId == item.Id).LowResolutionImage) : null,
+                    CommentCount = item.Comments is null ? 0 : item.Comments.Count,
+                    LikeCount = item.Likes is null ? 0 : item.Likes.Count,
+                });
+
+                return Ok(model);
+            }
+            return Ok();
         }
 
         [HttpGet("{id}")]

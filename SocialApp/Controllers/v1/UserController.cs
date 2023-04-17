@@ -77,6 +77,30 @@ namespace SocialApp.Controllers.v1
             return Ok(new { username = user.Username, userImageSrc = highResSrc, lowResUserImageSrc = lowResSrc });
         }
 
+        [HttpGet("{userId}")]
+        public async Task<IActionResult> GetUserById(int userId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId);
+
+            var userImage = await _fileService.GetFileByUserIdAsync(userId);
+
+            if (userImage is not null)
+            {
+                var base64String = Convert.ToBase64String(userImage.UserImage);
+
+                var base64StringLowRes = Convert.ToBase64String(userImage.UserLowResolutionImage);
+
+                var highResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64String}";
+
+                var lowResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64StringLowRes}";
+
+                return Ok(new { username = user.Username, userImageSrc = highResSrc, lowResUserImageSrc = lowResSrc });
+            }
+
+            return Ok(new { username = user.Username });
+
+        }
+
         [HttpPut("image")]
         public async Task<IActionResult> UpdateUserProfilePicture([FromForm] UpdateProfilePictureRequest request, CancellationToken token)
         {
@@ -107,7 +131,7 @@ namespace SocialApp.Controllers.v1
 
             if (user?.ImageId is not null)
             {
-                await _fileService.DeleteAsync(user.ImageId);
+                await _fileService.DeleteAsync(user.Id);
                 //userImage = await _fileService.GetByIdAsync(user.ImageId);
                 userImage.UserLowResolutionImage = lowResBytes;
                 userImage.UserId = userId;
