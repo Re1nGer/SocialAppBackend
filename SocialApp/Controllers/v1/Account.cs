@@ -72,6 +72,8 @@ namespace SocialApp.Controllers.v1
 
                 await _context.Users.AddAsync(user, token);
 
+                await _context.SaveChangesAsync(token);
+
                 var claims = new List<Claim>() { new Claim("UserId", user.Id.ToString()) }.ToArray();
 
                 var accessToken = JwtService.GenerateJwtToken(claims, 30);
@@ -80,7 +82,6 @@ namespace SocialApp.Controllers.v1
 
                 HttpContext.Response.Cookies.Append("RefreshToken", refreshToken);
 
-                await _context.SaveChangesAsync(token);
 
                 return Ok(new { token = accessToken });
 

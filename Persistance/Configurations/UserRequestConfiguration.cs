@@ -11,9 +11,6 @@ namespace Persistance.Configurations
             builder.HasOne(item => item.SendUser)
                 .WithMany(item => item.UserRequests)
                 .HasForeignKey(item => item.SenderUserId);
-
-            builder.HasOne(item => item.UserReceivingRequest)
-                .WithOne(item => item.UserRequest);
         }
     }
 }

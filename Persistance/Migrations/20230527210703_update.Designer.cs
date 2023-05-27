@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Persistance;
@@ -12,9 +13,10 @@ using Persistance;
 namespace Persistance.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230527210703_update")]
+    partial class update
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -268,7 +270,7 @@ namespace Persistance.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserReceivingRequest");
+                    b.ToTable("UserReceivingRequests");
                 });
 
             modelBuilder.Entity("Domain.Entities.UserRequest", b =>
@@ -292,6 +294,9 @@ namespace Persistance.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("SenderUserId");
+
+                    b.HasIndex("UserReceivingRequestId")
+                        .IsUnique();
 
                     b.ToTable("UserRequests");
                 });
@@ -387,6 +392,12 @@ namespace Persistance.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Domain.Entities.UserReceivingRequest", null)
+                        .WithOne("UserRequest")
+                        .HasForeignKey("Domain.Entities.UserRequest", "UserReceivingRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("SendUser");
                 });
 
@@ -414,6 +425,12 @@ namespace Persistance.Migrations
                     b.Navigation("Comments");
 
                     b.Navigation("Likes");
+                });
+
+            modelBuilder.Entity("Domain.Entities.UserReceivingRequest", b =>
+                {
+                    b.Navigation("UserRequest")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

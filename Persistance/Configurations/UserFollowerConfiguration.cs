@@ -11,10 +11,6 @@ namespace Persistance.Configurations
             builder.HasOne(x => x.FollowingUser)
                 .WithMany(x => x.Followers)
                 .HasForeignKey(x => x.FollowingId);
-
-/*            builder.HasOne(x => x.FollowerUser)
-                .WithMany(x => x.Followers)
-                .HasForeignKey(x => x.FollowerId);
-*/        }
+        }
     }
 }

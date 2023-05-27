@@ -16,7 +16,6 @@ namespace Persistance
         public virtual DbSet<Comment> UserComments { get; set; }
         public virtual DbSet<Like> UserLikes { get; set; }
         public virtual DbSet<UserRequest> UserRequests { get; set; }
-        public virtual DbSet<UserReceivingRequest> UserReceivingRequests { get; set; }
         public virtual DbSet<UserBlocked> UsersBlocked { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

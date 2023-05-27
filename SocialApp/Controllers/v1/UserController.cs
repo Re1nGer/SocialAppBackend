@@ -64,15 +64,29 @@ namespace SocialApp.Controllers.v1
 
             var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId);
 
+            if (user is null) return NotFound();
+
             var userImage = await _fileService.GetFileByUserIdAsync(userId);
 
-            var base64String = Convert.ToBase64String(userImage.UserImage);
+            var base64String = "";
 
-            var base64StringLowRes = Convert.ToBase64String(userImage.UserLowResolutionImage);
+            var base64StringLowRes = "";
 
-            var highResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64String}";
+            var highResSrc = "";
 
-            var lowResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64StringLowRes}";
+            var lowResSrc = "";
+
+            if (userImage is not null)
+            {
+                base64String = Convert.ToBase64String(userImage.UserImage);
+
+                base64StringLowRes = Convert.ToBase64String(userImage.UserLowResolutionImage);
+
+                highResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64String}";
+
+                lowResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64StringLowRes}";
+            }
+
 
             return Ok(new { username = user.Username, userImageSrc = highResSrc, lowResUserImageSrc = lowResSrc });
         }
