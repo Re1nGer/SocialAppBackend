@@ -29,11 +29,25 @@ namespace SocialApp.Controllers.v1
         {
             return User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value;
         }
+        private class UserList
+        {
+            public int Id { get; set; }
+            public string Username { get; set; }
+            public string LowResUserImageSrc { get; set; }
+            public string Email { get; set; }
+        }
 
+        //add pagination
         [HttpGet("list")]
         public async Task<IActionResult> GetUserList([FromQuery] string? q)
         {
-            var userList = _context.Users.AsQueryable();
+            var userList = _context.Users.Select(item => new UserList
+            {
+                Id = item.Id,
+                Username = item.Username,
+                LowResUserImageSrc = "",
+                Email = item.Email
+            });
 
             userList = userList.Where(item => item.Email.Contains(q));
 
@@ -48,10 +62,9 @@ namespace SocialApp.Controllers.v1
                 {
                     if (user.Id == file.UserId)
                     {
-                        user.Picture = Convert.ToBase64String(file.UserLowResolutionImage);
+                        user.LowResUserImageSrc = Convert.ToBase64String(file.UserLowResolutionImage);
                     }
                 }
-
             }
 
             return Ok(await userList.ToListAsync());
@@ -87,12 +100,11 @@ namespace SocialApp.Controllers.v1
                 lowResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64StringLowRes}";
             }
 
-
             return Ok(new { username = user.Username, userImageSrc = highResSrc, lowResUserImageSrc = lowResSrc });
         }
 
         [HttpGet("{userId}")]
-        public async Task<IActionResult> GetUserById(int userId)
+        public async Task<IActionResult> GetUserById(int userId, [FromQuery] bool isLowRes)
         {
             var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId);
 
@@ -104,7 +116,7 @@ namespace SocialApp.Controllers.v1
 
                 var base64StringLowRes = Convert.ToBase64String(userImage.UserLowResolutionImage);
 
-                var highResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64String}";
+                var highResSrc = isLowRes ? "" : $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64String}";
 
                 var lowResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64StringLowRes}";
 

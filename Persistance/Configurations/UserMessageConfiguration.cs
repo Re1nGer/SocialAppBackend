@@ -15,6 +15,9 @@ namespace Persistance.Configurations
             builder.HasOne(x => x.SourceUser)
                 .WithMany(x => x.UserMessageSources)
                 .HasForeignKey(x => x.SourceId);
+
+            builder.HasOne(x => x.UserChat)
+                .WithMany(x => x.Messages);
         }
     }
 }

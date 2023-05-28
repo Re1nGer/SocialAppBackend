@@ -161,7 +161,7 @@ namespace SocialApp.Controllers.v1
             var userPost = await _context.UserPosts
                 .Include(item => item.Comments)
                 .Include(item => item.Likes)
-                .FirstOrDefaultAsync(item => item.UserId == int.Parse(GetUserId()) && item.Id == id);
+                .FirstOrDefaultAsync(item => item.Id == id);
 
             var file = _fileService
                 .Where(item => item.PostId == userPost.Id).FirstOrDefault();

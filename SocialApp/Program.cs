@@ -65,8 +65,6 @@ builder.Services.AddTransient<FileService>();
 
 builder.Services.AddTransient<UserFileService>();
 
-builder.Services.AddTransient<AuthServices>();
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

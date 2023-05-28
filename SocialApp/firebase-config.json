@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "ecommerce-auth-5a529",
+  "private_key_id": "70749f3dd5449b0ea1123fa453c3abbb0c6570c6",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEugIBADANBgkqhkiG9w0BAQEFAASCBKQwggSgAgEAAoIBAQC7KAwhmnSQaT2H\nBU+Uusv06kyM50TBQPceFgm43Sh6OAozGkTv38E3Y2DvvdtIQdhQ38gqd9DjJx47\nfMxA8yV8BCGreGBQ7SBBaoSkkBKD+Ur63UgujgUTwWph61BkNgBQ27inXtNASGwy\nWTsktdJxEOj7GtcuSryLBP2zRksq9xqOzRscnh9i2onOMaThiShesJE6NtoiErWP\nuLBhLds2TExcbsrhGyaEVbtz4ldO11sOA06lGi5Qz7xzlRDwjNVp8tHy69nrF1iq\nlO3fnLsGR30NpC9cYGvZqye/o2P9DKQl8JWKH9VSrTBHRhcw9TRqs0pThYHTCt9Q\n3FtKtfoTAgMBAAECggEAAx+3TOvjX5iAgE6/r5q+L8YMMnSwkM2d5YcppC4w1qvO\n/V/5X/830U31cfSVAril1mFXc0bRTXe7YsCbai23/1qhGaSzOtz4yY69GXNI+juN\ngfClzuOFxMW/ZrrP4M3ti58qdSsfuVyo50UJ0ZWLv/svxsBoChJErmKOPeroJn0d\nFsrPjz332Up0xqT09pgs3jYuVNjWtBbk7ug+Qt7cA4nRGaZmffvry6Ea4WQGR0cH\ntzqNBTCgWg3P2FdWp4QkGxamAOtPRboB2Wcf8Krfkir2wLdjfitjAT53iMrwPe02\nkNXun+H5dosWEnell9Mjl+XUEnmVzSLAPoz/GaZsjQKBgQDeaAOM2UfiR0rXdhQB\nqOXVi82V9KUHz5Y8pPjQg33XH4hOW1WPfUHCoHhhHeOp5qgLCdjJylrtJuQmDlvn\nNfJmOewSMkHxMOW021BJL4pD8j8G4K+pQUThawPeACuMshV8w3YsLMCc67hvhtvS\nFTA+F3PJfQxlEhVR4qWIlrixzQKBgQDXbP6w0PBepy3zwQt/tSdYiXwkDkbIBL5e\nVNatCFJ017xIpISjvtXEgdrYtd+tICxdjXP3zEv8yUbDjMED/cT/kvucfhqYGOKd\ngxNe+TmnxOynlToe6R/mTaOec3aRs7PBpH9D5NNtK7B79YjLy+mbNets0+6lL3ob\n4ZQ15Tj7XwJ/DCmkCA/Z3oYHkcDjVzPlXchHdevrGoI/tRFQihamyxzuV1qnUzGG\nZx5fdvArgx8aEYB4WpC2aEG4OFyQqhRJLU39mwEkmgwSg9F6koYHCbA1wiqHcLoh\nCjLQA1P/DbKveiM2UzQfVHWPoIm/e72s5bhinKI6C0zx3YiHhPC5KQKBgGbW+4cB\nV554BLHWuFyQ6GWVzJOR1SxrR03VBl64GFT7IEE1eLSKx5X1v7mwqUUGlOdcPb5P\n4v6cP5Hewc3b+Y1gZ4k/kgaF6rjy9+5g36s9kRQ3YvWaqMXSzoc366SGuwt4MeEB\nfgUh1DB4+IMBp1WXGfpr+gMVdR+WQqCv+tHVAoGAThlH7Ge8zafbewusmwk1tvF2\n3UbrXJqh/vt5XixCj31uMpFQGIuTtnta9M+JtZ6ljlC+OvnwSzwYDKGLl2wPryDu\nWp7ld9hXrU3fSsccG1V89H08AIm4y/MkXm43ZXaXrJcozBvcRBe5tWSRPRkn55Eq\n3aEdZVuZn3030BLvttI=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-zrhc6@ecommerce-auth-5a529.iam.gserviceaccount.com",
+  "client_id": "110812689210614998610",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-zrhc6%40ecommerce-auth-5a529.iam.gserviceaccount.com"
+}
