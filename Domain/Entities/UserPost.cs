@@ -3,10 +3,12 @@ namespace Domain.Entities
 {
     public class UserPost
     {
-        public int Id { get; set; } 
-        public int UserId { get; set; } 
+        public Guid Id { get; set; } 
+        public Guid UserId { get; set; } 
         public User User { get; set; }
         public string Message { get; set; } 
+        public string? MediaUrl { get; set; }
+        public string? LowResMediaUrl { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }    
         public List<int>? CommentIds { get; set; }

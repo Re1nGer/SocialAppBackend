@@ -25,11 +25,9 @@ namespace Persistance.Migrations
 
             modelBuilder.Entity("Domain.Entities.Comment", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("DateCreated")
                         .HasColumnType("timestamp with time zone");
@@ -41,11 +39,11 @@ namespace Persistance.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("PostId")
-                        .HasColumnType("integer");
+                    b.Property<Guid?>("PostId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -69,11 +67,11 @@ namespace Persistance.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("PostId")
-                        .HasColumnType("integer");
+                    b.Property<Guid?>("PostId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -84,11 +82,9 @@ namespace Persistance.Migrations
 
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -97,7 +93,7 @@ namespace Persistance.Migrations
                     b.Property<string>("FirstName")
                         .HasColumnType("text");
 
-                    b.Property<string>("ImageId")
+                    b.Property<string>("HighResImageLink")
                         .HasColumnType("text");
 
                     b.Property<string>("Intro")
@@ -109,10 +105,10 @@ namespace Persistance.Migrations
                     b.Property<string>("LastName")
                         .HasColumnType("text");
 
-                    b.Property<string>("Picture")
+                    b.Property<string>("LowResImageLink")
                         .HasColumnType("text");
 
-                    b.Property<string>("Profile")
+                    b.Property<string>("ProfileBackgroundImagelink")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("RegisteredAt")
@@ -135,17 +131,17 @@ namespace Persistance.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("UserBlockedId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserBlockedId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UsersBlocked");
+                    b.ToTable("UserBlocked");
                 });
 
             modelBuilder.Entity("Domain.Entities.UserChat", b =>
@@ -154,8 +150,8 @@ namespace Persistance.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -175,14 +171,14 @@ namespace Persistance.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("FollowerId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("FollowerId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int?>("FollowerUserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid?>("FollowerUserId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("FollowingId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("FollowingId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -214,11 +210,11 @@ namespace Persistance.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("SourceId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("SourceId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("TargetId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -239,11 +235,9 @@ namespace Persistance.Migrations
 
             modelBuilder.Entity("Domain.Entities.UserPost", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<List<int>>("CommentIds")
                         .HasColumnType("integer[]");
@@ -254,6 +248,12 @@ namespace Persistance.Migrations
                     b.Property<List<int>>("LikeIds")
                         .HasColumnType("integer[]");
 
+                    b.Property<string>("LowResMediaUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MediaUrl")
+                        .HasColumnType("text");
+
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasColumnType("text");
@@ -261,8 +261,8 @@ namespace Persistance.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -279,11 +279,11 @@ namespace Persistance.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("TargetUserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("TargetUserId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int?>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -294,21 +294,19 @@ namespace Persistance.Migrations
 
             modelBuilder.Entity("Domain.Entities.UserRequest", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("uuid");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("SenderUserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("SenderUserId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("UserReceivingRequestId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserReceivingRequestId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 

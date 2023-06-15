@@ -19,18 +19,19 @@ namespace SocialApp.Controllers.v1
             _context = context;
         }
 
-        private string? GetUserId()
+        private Guid GetUserId()
         {
-            return User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value;
+            return Guid.Parse(User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value);
         }
 
         [HttpGet]
         [Route("{postId}")]
-        public async Task<IActionResult> GetComments(int postId)
+        public async Task<IActionResult> GetComments(Guid postId)
         {
 
             // Add the new UserComment object to the UserComments table
-            var comments  = await _context.UserComments.Where(item => item.PostId == postId).ToListAsync();
+            var comments  = await _context.UserComments
+                .Where(item => item.PostId == postId).ToListAsync();
 
             // Return a response indicating success
             return Ok(comments);
@@ -40,12 +41,12 @@ namespace SocialApp.Controllers.v1
         [Route("")]
         public async Task<IActionResult> PostComment([FromBody] PostCommentRequest comment)
         {
-            if (comment is null || comment.PostId == 0 || comment.Message == "")
+            if (comment is null || comment.PostId == Guid.Empty || comment.Message == "")
             {
                 return BadRequest();
             }
 
-            var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == int.Parse(GetUserId()));
+            var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == GetUserId());
 
             if (user is null)
             {
@@ -59,7 +60,7 @@ namespace SocialApp.Controllers.v1
                 DateCreated = DateTime.UtcNow,
                 Message = comment.Message,
                 PostId = comment.PostId,
-                UserId = int.Parse(GetUserId())
+                UserId = GetUserId()
             };
 
             // Add the new UserComment object to the UserComments table
@@ -73,12 +74,12 @@ namespace SocialApp.Controllers.v1
 
         [HttpDelete]
         [Route("{postId}/{commentId}")]
-        public async Task<IActionResult> DeleteComment(int postId, int commentId)
+        public async Task<IActionResult> DeleteComment(Guid postId, Guid commentId)
         {
             // Create a new UserComment object and set its properties
             var commentExists = await _context
                 .UserComments
-                .AnyAsync(item => item.PostId == postId && item.Id == commentId && item.UserId == int.Parse(GetUserId()));
+                .AnyAsync(item => item.PostId == postId && item.Id == commentId && item.UserId == GetUserId());
 
             if (!commentExists)
             {
@@ -101,7 +102,7 @@ namespace SocialApp.Controllers.v1
             // Create a new UserComment object and set its properties
             var commentExists = await _context
                 .UserComments
-                .AnyAsync(item => item.PostId == request.PostId && item.Id == request.CommentId && item.UserId == int.Parse(GetUserId()));
+                .AnyAsync(item => item.PostId == request.PostId && item.Id == request.CommentId && item.UserId == GetUserId());
 
             if (!commentExists)
             {
@@ -124,11 +125,11 @@ namespace SocialApp.Controllers.v1
     }
     public class PutCommentRequest : PostCommentRequest
     {
-        public int CommentId { get; set; }
+        public Guid CommentId { get; set; }
     }
     public class PostCommentRequest
     {
-        public int PostId { get; set; }
+        public Guid PostId { get; set; }
         public string Message { get; set; }
     }
 }

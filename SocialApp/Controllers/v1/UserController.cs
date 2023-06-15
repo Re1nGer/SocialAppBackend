@@ -1,4 +1,6 @@
-﻿using Domain.Entities;
+﻿using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
+using Domain.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Persistance;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SocialApp.Models;
-using SocialApp.Services;
 
 namespace SocialApp.Controllers.v1
 {
@@ -17,196 +18,87 @@ namespace SocialApp.Controllers.v1
     {
         private readonly ApplicationDbContext _context;
 
-        private readonly UserFileService _fileService;
-
-        public UserController(ApplicationDbContext context, UserFileService fileService)
+        public UserController(ApplicationDbContext context)
         {
             _context = context;
-            _fileService = fileService;
         }
 
-        private string? GetUserId()
+        private Guid GetUserId()
         {
-            return User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value;
-        }
-        private class UserList
-        {
-            public int Id { get; set; }
-            public string Username { get; set; }
-            public string LowResUserImageSrc { get; set; }
-            public string Email { get; set; }
+            return Guid.Parse(User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value);
         }
 
         //add pagination
         [HttpGet("list")]
         public async Task<IActionResult> GetUserList([FromQuery] string? q)
         {
-            var userList = _context.Users.Select(item => new UserList
-            {
-                Id = item.Id,
-                Username = item.Username,
-                LowResUserImageSrc = "",
-                Email = item.Email
-            });
-
-            userList = userList.Where(item => item.Email.Contains(q));
-
-            var fileList = new List<UserDocument>();
-
-            var files = _fileService.GetAll();
-
-            foreach(var user in userList)
-            {
-
-                foreach(var file in files)
-                {
-                    if (user.Id == file.UserId)
-                    {
-                        user.LowResUserImageSrc = Convert.ToBase64String(file.UserLowResolutionImage);
-                    }
-                }
-            }
-
-            return Ok(await userList.ToListAsync());
+            return Ok(await _context.Users.Where(item => item.Username.Contains(q) || q.Contains(item.Username)).ToListAsync());
         }
 
         [HttpGet("")]
         public async Task<IActionResult> GetUser()
         {
-            var userId = int.Parse(GetUserId());
+            var userId = GetUserId();
 
-            var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId);
-
-            if (user is null) return NotFound();
-
-            var userImage = await _fileService.GetFileByUserIdAsync(userId);
-
-            var base64String = "";
-
-            var base64StringLowRes = "";
-
-            var highResSrc = "";
-
-            var lowResSrc = "";
-
-            if (userImage is not null)
+            var user = await _context.Users
+                .Include(item => item.UserPosts)
+                .FirstOrDefaultAsync(item => item.Id == userId);
+            
+            var requests = await _context.UserRequests
+                .Where(item => item.UserReceivingRequestId == userId && item.Status == "Pending")
+                .ToListAsync();
+            
+            var response = new UserResponse()
             {
-                base64String = Convert.ToBase64String(userImage.UserImage);
+                Id = userId,
+                Username = user.Username,
+                UserPosts = user.UserPosts.ToList(),
+                UserRequests = requests,
+                HighResImageLink = user.HighResImageLink,
+                LowResImageLink = user.LowResImageLink,
+                ProfileBackgroundImagelink = user.ProfileBackgroundImagelink
+            };
 
-                base64StringLowRes = Convert.ToBase64String(userImage.UserLowResolutionImage);
-
-                highResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64String}";
-
-                lowResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64StringLowRes}";
-            }
-
-            return Ok(new { username = user.Username, userImageSrc = highResSrc, lowResUserImageSrc = lowResSrc });
+            return user is null ? NotFound() : Ok(response);
         }
-
+        
         [HttpGet("{userId}")]
-        public async Task<IActionResult> GetUserById(int userId, [FromQuery] bool isLowRes)
+        public async Task<IActionResult> GetUserById(Guid userId)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId);
+            var user = await _context.Users
+                .Include(item => item.UserPosts)
+                .FirstOrDefaultAsync(item => item.Id == userId);
+            
 
-            var userImage = await _fileService.GetFileByUserIdAsync(userId);
-
-            if (userImage is not null)
-            {
-                var base64String = Convert.ToBase64String(userImage.UserImage);
-
-                var base64StringLowRes = Convert.ToBase64String(userImage.UserLowResolutionImage);
-
-                var highResSrc = isLowRes ? "" : $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64String}";
-
-                var lowResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64StringLowRes}";
-
-                return Ok(new { username = user.Username, userImageSrc = highResSrc, lowResUserImageSrc = lowResSrc });
-            }
-
-            return Ok(new { username = user.Username });
+            return Ok(user);
         }
-
-        [HttpGet("profileimage")]
-        public async Task<IActionResult> GetProfileImageByUserId()
+        
+        [HttpGet("requests/{userId}")]
+        public async Task<IActionResult> GetUserRequestsBy(Guid userId, CancellationToken token)
         {
-            var userId = int.Parse(GetUserId());
-
-            var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId);
-
-            var userImage = await _fileService.GetFileByUserIdAsync(userId);
-
-            if (userImage is not null)
-            {
-                var base64StringLowRes = Convert.ToBase64String(userImage.UserLowResolutionImage);
-
-                var lowResSrc = $"data:image/{GetFileExtension(userImage.UserImageName)};base64,{base64StringLowRes}";
-
-                return Ok(new { lowResUserImageSrc = lowResSrc });
-            }
-
-            return Ok(new { lowResUserImageSrc = "" });
+            var requests = await _context.UserRequests
+                .Where(item => item.UserReceivingRequestId == userId)
+                .ToListAsync(token);
+            
+            return Ok(requests);
         }
 
         [HttpPut("image")]
         public async Task<IActionResult> UpdateUserProfilePicture([FromForm] UpdateProfilePictureRequest request, CancellationToken token)
         {
-            var userId = int.Parse(GetUserId());
+            var userId = GetUserId();
 
             var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId);
 
-            var lowResImage = await GenerateLowResImage(request.Image);
+            var lowResImage = await ProcessAndUploadImage(request.Image);
 
-            byte[] lowResBytes;
+            var highResImage = await UploadImageToCloudinary(request.Image.Name, request.Image);
 
-            using (var stream = new MemoryStream())
-            {
-                await lowResImage.SaveAsync(stream, new JpegEncoder(), token);
-                lowResBytes = stream.ToArray();
-            }
+            //probably extract out into dependency
 
-            byte[] highResBytes;
+            user.HighResImageLink = highResImage;
 
-            using (var stream = new MemoryStream())
-            {
-                await request.Image.CopyToAsync(stream);
-                highResBytes = stream.ToArray();
-            }
-
-            UserDocument userImage = new UserDocument();
-            var imageId = MongoDB.Bson.ObjectId.GenerateNewId();
-
-            if (user?.ImageId is not null)
-            {
-                await _fileService.DeleteAsync(user.Id);
-                //userImage = await _fileService.GetByIdAsync(user.ImageId);
-                userImage.UserLowResolutionImage = lowResBytes;
-                userImage.UserId = userId;
-                user.ImageId = imageId.ToString();
-                userImage.UserImageName = request.Image.FileName;
-                userImage.UserImage = highResBytes;
-                await _fileService.InsertAsync(userImage);
-            }
-            else
-            {
-
-                var newUserImage = new UserDocument
-                {
-                    Id = imageId,
-                    UserId = userId,
-                    UserLowResolutionImage = lowResBytes,
-                    UserImage = highResBytes,
-                    UserImageName = request.Image.FileName
-                };
-
-                if (user.ImageId is null)
-                {
-                    user.ImageId = imageId.ToString();
-                    userImage.UserId = userId;
-                }
-
-                await _fileService.InsertAsync(newUserImage);
-
-            }
+            user.LowResImageLink = lowResImage;
 
             _context.Users.Update(user);
                 
@@ -215,58 +107,84 @@ namespace SocialApp.Controllers.v1
             return Ok();
         }
 
-        [HttpPost("blockeduser")]
-        public async Task<IActionResult> BlockUser([FromBody] BlockUserRequest request)
+        [HttpPost("backgroundimage")]
+        public async Task<IActionResult> UpdateUserBackgroundProfilePicture([FromForm] UpdateProfilePictureRequest request, CancellationToken token)
         {
-            if (await _context.UsersBlocked.AnyAsync(item => item.UserBlockedId == request.BlockedUserId))
-                return BadRequest("User is already blocked");
+            var userId = GetUserId();
 
-            var userId = int.Parse(GetUserId());
+            var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId);
 
-            var userBlocked = new UserBlocked
-            {
-                UserBlockedId = request.BlockedUserId,
-                UserId = userId,    
-            };
+            var backgroundImageLink = await UploadImageToCloudinary(request.Image.Name, request.Image);
 
-            await _context.UsersBlocked.AddAsync(userBlocked);
+            user.ProfileBackgroundImagelink = backgroundImageLink;
 
+            _context.Users.Update(user);
+                
             await _context.SaveChangesAsync();
 
-            return Ok();
+            return Ok(new { backgroundImageLink });
         }
-        private async Task<Image> GenerateLowResImage(IFormFile file)
-        {
-            using (var stream = file.OpenReadStream())
-            {
-                var image = await Image.LoadAsync(stream);
-                image.Mutate(x => x.Resize(new ResizeOptions
-                {
-                    Size = new Size(500, 500),
-                    Mode = ResizeMode.Max
-                }));
-                return image;
-            }
-        }
-        private string? GetFileExtension(string fileName)
-        {
-            if (string.IsNullOrEmpty(fileName))
-            {
-                return null;
-            }
 
-            int lastDotIndex = fileName.LastIndexOf('.');
-            if (lastDotIndex == -1)
+        private async Task<string> ProcessAndUploadImage(IFormFile formFile)
+        {
+            using (Image image = Image.Load(formFile.OpenReadStream()))
             {
-                return null;
-            }
+                Image mutatedImage = MutateImage(image);
 
-            return fileName.Substring(lastDotIndex + 1);
+                byte[] imageBytes = ConvertImageToBytes(mutatedImage);
+                string imageName = formFile.FileName;
+
+                return await UploadImageToCloudinary(imageName, imageBytes);
+            }
         }
-    }
-    public class BlockUserRequest
-    {
-        public int BlockedUserId { get; set; }
+
+        private Image MutateImage(Image image)
+        {
+            image.Mutate(x => x.Resize(new ResizeOptions
+            {
+                Size = new SixLabors.ImageSharp.Size(500, 500),
+                Mode = ResizeMode.Max
+            }));
+
+            return image;
+        }
+        private byte[] ConvertImageToBytes(Image image)
+        {
+            using (var stream = new MemoryStream())
+            {
+                image.Save(stream, new JpegEncoder()); // Specify the appropriate encoder based on your image format
+                return stream.ToArray();
+            }
+        }
+
+        private async Task<string> UploadImageToCloudinary(string imageName, byte[] imageBytes)
+        {
+            var uploadParams = new ImageUploadParams
+            {
+                File = new FileDescription(imageName, new MemoryStream(imageBytes))
+            };
+
+            var cloudinary = new Cloudinary(new Account("dcjubzmeu", "248951749718234", "9SNdW4kehk_tR6jY4rkDexcz928"));
+
+            ImageUploadResult uploadResult = await cloudinary.UploadAsync(uploadParams);
+
+            return uploadResult.SecureUrl.ToString();
+        }
+        private async Task<string> UploadImageToCloudinary(string imageName, IFormFile image)
+        {
+            using var stream = image.OpenReadStream();
+
+            var uploadParams = new ImageUploadParams
+            {
+                File = new FileDescription(imageName, stream)
+            };
+
+            var cloudinary = new Cloudinary(new Account("dcjubzmeu", "248951749718234", "9SNdW4kehk_tR6jY4rkDexcz928"));
+
+            ImageUploadResult uploadResult = await cloudinary.UploadAsync(uploadParams);
+
+            return uploadResult.SecureUrl.ToString();
+        }
     }
     public class UpdateProfilePictureRequest
     {

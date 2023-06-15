@@ -1,18 +1,17 @@
-using FirebaseAdmin;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using Persistance;
 using SocialApp.Services;
-using SocialApp.TokenValidator;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+        .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 //builder.Services.AddSingleton(FirebaseApp.Create());
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -30,10 +29,6 @@ builder.Services.AddCors(opts =>
                     //.AllowCredentials();
                 });
             });
-
-/*builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddScheme<AuthenticationSchemeOptions, FirebaseAuthenticationHandler>(JwtBearerDefaults.AuthenticationScheme, (o) => { });
-*/
 
 builder.Services.AddAuthentication(options =>
     {
@@ -60,10 +55,6 @@ builder.Services.AddPersistance(builder.Configuration);
 string connectionString = builder.Configuration.GetConnectionString("MongoDb");
 
 builder.Services.AddSingleton<IMongoClient>(new MongoClient(connectionString));
-
-builder.Services.AddTransient<FileService>();
-
-builder.Services.AddTransient<UserFileService>();
 
 var app = builder.Build();
 

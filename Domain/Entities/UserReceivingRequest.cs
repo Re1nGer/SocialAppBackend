@@ -3,6 +3,6 @@
     public class UserReceivingRequest
     {
         public int Id { get; set; }
-        public int TargetUserId { get; set; }   
+        public Guid TargetUserId { get; set; }   
     }
 }

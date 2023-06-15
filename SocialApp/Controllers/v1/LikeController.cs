@@ -12,12 +12,12 @@ namespace SocialApp.Controllers.v1
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class LikeController : ControllerBase
     {
-        private string? GetUserId()
-        {
-            return User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value;
-        }
-
         private readonly ApplicationDbContext _context;
+
+        private Guid GetUserId()
+        {
+            return Guid.Parse(User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value);
+        }
 
         public LikeController(ApplicationDbContext context)
         {
@@ -25,9 +25,9 @@ namespace SocialApp.Controllers.v1
         }
 
         [HttpPut("{postId}")]
-        public async Task<IActionResult> PutLike(int postId, CancellationToken token)
+        public async Task<IActionResult> PutLike(Guid postId, CancellationToken token)
         {
-            var likedPost = await _context.UserLikes.AnyAsync(item => item.UserId == int.Parse(GetUserId()) && item.PostId == postId, token);
+            var likedPost = await _context.UserLikes.AnyAsync(item => item.UserId == GetUserId() && item.PostId == postId, token);
 
             if (likedPost)
             {
@@ -37,7 +37,7 @@ namespace SocialApp.Controllers.v1
             var newLike = new Like
             {
                 PostId = postId, 
-                UserId = int.Parse(GetUserId()),
+                UserId = GetUserId(),
                 CreatedAt = DateTime.UtcNow,
             };
 
@@ -47,16 +47,18 @@ namespace SocialApp.Controllers.v1
         }
 
         [HttpDelete("{postId}")]
-        public async Task<IActionResult> DeleteLike(int postId, CancellationToken token)
+        public async Task<IActionResult> DeleteLike(Guid postId, CancellationToken token)
         {
-            var likedPost = await _context.UserLikes.AnyAsync(item => item.UserId == int.Parse(GetUserId()) && item.PostId == postId, token);
+            var likedPost = await _context.UserLikes
+                .AnyAsync(item => item.UserId == GetUserId() && item.PostId == postId, token);
 
             if (!likedPost)
             {
                 return BadRequest();
             }
 
-            var like = await _context.UserLikes.FirstAsync(item => item.PostId == postId && item.UserId == int.Parse(GetUserId()));
+            var like = await _context.UserLikes
+                .FirstAsync(item => item.PostId == postId && item.UserId == GetUserId());
 
             _context.UserLikes.Remove(like);
 
@@ -67,16 +69,15 @@ namespace SocialApp.Controllers.v1
 
 
         [HttpGet("{postId}")]
-        public async Task<IActionResult> GetLike(int postId, CancellationToken token)
+        public async Task<IActionResult> GetLike(Guid postId, CancellationToken token)
         {
-            var likedPost = await _context.UserLikes.AnyAsync(item => item.UserId == int.Parse(GetUserId()) && item.PostId == postId, token);
+            var likedPost = await _context.UserLikes
+                .AnyAsync(item => item.UserId == GetUserId() && item.PostId == postId, token);
 
             if (!likedPost)
             {
                 return Ok(false);
             }
-
-            //var like = await _context.UserLikes.FirstAsync(item => item.U);
 
             return Ok(true);
         }

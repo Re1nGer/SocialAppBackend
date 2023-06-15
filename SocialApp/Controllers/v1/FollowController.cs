@@ -12,9 +12,9 @@ namespace SocialApp.Controllers.v1
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class FollowController : ControllerBase
     {
-        private string? GetUserId()
+        private Guid GetUserId()
         {
-            return User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value;
+            return Guid.Parse(User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value);
         }
 
         private readonly ApplicationDbContext _context;
@@ -27,7 +27,7 @@ namespace SocialApp.Controllers.v1
         [HttpGet("isfollowing/{targetUserId}")]
         public async Task<IActionResult> IsFollowing([FromRoute]int targetUserId, CancellationToken token)
         {
-            var userId = int.Parse(GetUserId());
+            var userId = GetUserId();
 
             var user = await _context.Users
                 .Include(item => item.Following)
@@ -43,7 +43,7 @@ namespace SocialApp.Controllers.v1
         [HttpPost("")]
         public async Task<IActionResult> Follow(FriedRequest request, CancellationToken token)
         {
-            var userId = int.Parse(GetUserId());
+            var userId = GetUserId();
 
             var newFriendRequest = new UserRequest
             {
@@ -54,7 +54,7 @@ namespace SocialApp.Controllers.v1
 
             var hasRequest = _context
                 .UserRequests
-                .Any(item => item.SenderUserId == request.TargetUserId); 
+                .Any(item => item.SenderUserId == userId && item.UserReceivingRequestId == request.TargetUserId); 
 
             if (hasRequest)
             {
@@ -71,12 +71,12 @@ namespace SocialApp.Controllers.v1
         [HttpPost("accept")]
         public async Task<IActionResult> AcceptFollow(AcceptRequest request, CancellationToken token)
         {
-            var userId = int.Parse(GetUserId());
+            var userId = GetUserId();
 
             var userRequest = _context
                 .UserRequests
                 .Include(item => item.SendUser)
-                .FirstOrDefault(item => item.Id == request.UserRequestId);
+                .FirstOrDefault(item => item.SenderUserId == request.UserRequestId &&  item.UserReceivingRequestId == userId);
 
             if (userRequest is null)
                 return BadRequest("No such follow request exists");
@@ -91,7 +91,7 @@ namespace SocialApp.Controllers.v1
         [HttpPost("reject")]
         public async Task<IActionResult> RejectFollow(AcceptRequest request, CancellationToken token)
         {
-            var userId = int.Parse(GetUserId());
+            var userId = GetUserId();
 
             var userRequest = _context
                 .UserRequests
@@ -111,7 +111,7 @@ namespace SocialApp.Controllers.v1
         [HttpGet("requests")]
         public async Task<IActionResult> FollowRequests(CancellationToken token)
         {
-            var userId = int.Parse(GetUserId());
+            var userId = GetUserId();
 
             var newFollowRequests = await _context.UserRequests
                 .Where(item => item.UserReceivingRequestId == userId && item.Status == "Pending")
@@ -123,10 +123,10 @@ namespace SocialApp.Controllers.v1
 
     public class FriedRequest
     {
-        public int TargetUserId { get; set; }
+        public Guid TargetUserId { get; set; }
     }
     public class AcceptRequest
     {
-        public int UserRequestId { get; set; }
+        public Guid UserRequestId { get; set; }
     }
 }

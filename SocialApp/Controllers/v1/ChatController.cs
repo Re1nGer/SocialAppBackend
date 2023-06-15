@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Domain.Entities;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,15 +19,15 @@ namespace SocialApp.Controllers.v1
             _context = context;
         }
 
-        private string? GetUserId()
+        private Guid GetUserId()
         {
-            return User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value;
+            return Guid.Parse(User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value);
         }
 
         [HttpGet]
         public async Task<IActionResult> GetChats()
         {
-            var userId = int.Parse(GetUserId());
+            var userId = GetUserId();
 
             // Add the new UserComment object to the UserComments table
             var chats  = await _context.UserChats
@@ -40,7 +41,12 @@ namespace SocialApp.Controllers.v1
         [HttpPost]
         public async Task<IActionResult> StartChat([FromBody] StartChatRequest request)
         {
-            var userId = int.Parse(GetUserId());
+            var userId = GetUserId();
+
+            // Fow now we should store messages for both startUser and targetUser
+            var newChatStartUser = await _context.UserChats.AddAsync(new UserChat { Messages = new List<UserMessage>(), UserId = userId  });
+
+             //var newChatTargetUser = await _context.UserChats.AddAsync(new UserChat { Messages = new List<UserMessage>(), UserId = userId  });
 
             // Add the new UserComment object to the UserComments table
             var chats  = await _context.UserChats

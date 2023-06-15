@@ -1,13 +1,13 @@
-﻿using Domain.Entities;
+﻿using CloudinaryDotNet;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using CloudinaryDotNet.Actions;
 using Persistance;
+using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp.Formats.Jpeg;
-using SocialApp.Models;
-using SocialApp.Services;
 
 namespace SocialApp.Controllers.v1
 {
@@ -15,18 +15,16 @@ namespace SocialApp.Controllers.v1
     [Route("api/v1/[controller]")]
     public class PostController : ControllerBase
     {
-        private string? GetUserId()
+        private Guid GetUserId()
         {
-            return User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value;
+            return Guid.Parse(User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value);
         }
 
         private readonly ApplicationDbContext _context;
-        private readonly FileService _fileService;
 
-        public PostController(ApplicationDbContext context, FileService fileService)
+        public PostController(ApplicationDbContext context)
         {
             _context = context;
-            _fileService = fileService;
         }
 
         [HttpPost("")]
@@ -43,7 +41,7 @@ namespace SocialApp.Controllers.v1
 
             var sanitizedHtmlInput = sanitizer.Sanitize(request.HtmlContent);
 
-            var userId = int.Parse(GetUserId());
+            var userId = GetUserId();
 
             try
             {
@@ -51,47 +49,28 @@ namespace SocialApp.Controllers.v1
                 {
                     Message = sanitizedHtmlInput,
                     CreatedAt = DateTime.UtcNow,
-                    UserId = userId
+                    UserId = userId,
                 };
 
                 await _context.UserPosts.AddAsync(postModel, cancellationToken);
 
-                var lowresImage = await GenerateLowResImage(request.Image);
+                var lowresImageUrl = await ProcessAndUploadImage(request.Image);
+
+                var highResImageUrl = await UploadImageToCloudinary(request.Image.Name, request.Image);
+
+                postModel.LowResMediaUrl = lowresImageUrl;
+
+                postModel.MediaUrl = highResImageUrl;
 
                 await _context.SaveChangesAsync(cancellationToken);
 
-                using (var memoryStream = new MemoryStream())
-                {
-                    await request.Image.CopyToAsync(memoryStream);
-
-                    byte[] lowresBytes;
-
-                    using (var stream = new MemoryStream())
-                    {
-                        await lowresImage.SaveAsync(stream, new JpegEncoder(), cancellationToken);
-                        lowresBytes = stream.ToArray();
-                    }
-
-                    var document = new FileDocument
-                    {
-
-                        Filename = request.Image.FileName,
-                        Image = memoryStream.ToArray(),
-                        UserId = userId,
-                        PostId = postModel.Id,
-                        LowResolutionImage = lowresBytes
-                    };
-
-                    await _fileService.InsertAsync(document);
-                }
-
                 return Ok();
 
-            } catch (Exception ex)
-            {
-                return BadRequest(new ErrorModel { Message = ex.Message});  
             }
-
+            catch (Exception ex)
+            {
+                return BadRequest(new ErrorModel { Message = ex.Message });
+            }
         }
 
         [HttpGet("list")]
@@ -101,32 +80,17 @@ namespace SocialApp.Controllers.v1
             var userPosts = await _context.UserPosts
                 .Include(item => item.Comments)
                 .Include(item => item.Likes)
-                .Where(item => item.UserId == int.Parse(GetUserId()))
+                .Where(item => item.UserId == GetUserId())
                 .AsSplitQuery()
                 .AsNoTrackingWithIdentityResolution()
                 .ToListAsync(token);
-            
-            var files = _fileService.Where(item => item.UserId == int.Parse(GetUserId())).ToList();
 
-            if (userPosts.Any())
-            {
-                var model = userPosts.Select(item => new PostModel
-                {
-                    Id = item.Id,
-                    HtmlContent = item.Message,
-                    ImgSrc = files.Any(image => image.PostId == item.Id) ? Convert.ToBase64String(files.FirstOrDefault(image => image.PostId == item.Id).LowResolutionImage) : null,
-                    CommentCount = item.Comments is null ? 0 : item.Comments.Count,
-                    LikeCount = item.Likes is null ? 0 : item.Likes.Count,
-                });
-
-                return Ok(model);
-            }
-            return Ok();
+            return Ok(userPosts);
         }
 
         [HttpGet("{userId}/list")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task<IActionResult> GetPostsByUserId(int userId, CancellationToken token)
+        public async Task<IActionResult> GetPostsByUserId(Guid userId, CancellationToken token)
         {
             var userPosts = await _context.UserPosts
                 .Include(item => item.Comments)
@@ -136,176 +100,103 @@ namespace SocialApp.Controllers.v1
                 .AsNoTrackingWithIdentityResolution()
                 .ToListAsync(token);
             
-            var files = _fileService.Where(item => item.UserId == userId).ToList();
-
-            if (userPosts.Any())
-            {
-                var model = userPosts.Select(item => new PostModel
-                {
-                    Id = item.Id,
-                    HtmlContent = item.Message,
-                    ImgSrc = files.Any(image => image.PostId == item.Id) ? Convert.ToBase64String(files.FirstOrDefault(image => image.PostId == item.Id).LowResolutionImage) : null,
-                    CommentCount = item.Comments is null ? 0 : item.Comments.Count,
-                    LikeCount = item.Likes is null ? 0 : item.Likes.Count,
-                });
-
-                return Ok(model);
-            }
-            return Ok(new object[] {});
+            return Ok(userPosts);
         }
 
         [HttpGet("{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task<IActionResult> GetPostById(int id)
+        public async Task<IActionResult> GetPostById(Guid id)
         {
             var userPost = await _context.UserPosts
                 .Include(item => item.Comments)
                 .Include(item => item.Likes)
                 .FirstOrDefaultAsync(item => item.Id == id);
 
-            var file = _fileService
-                .Where(item => item.PostId == userPost.Id).FirstOrDefault();
-
-            var likeCount = await _context.UserLikes.Where(item => item.PostId == id).CountAsync();
-
-            var commentCount = await _context.UserComments.Where(item => item.PostId == id).CountAsync();
-
-            var model =  new PostModel
+            var model = new PostModel
             {
                 Id =  userPost.Id,
                 HtmlContent = userPost.Message,
-                LikeCount = likeCount,
-                CommentCount = commentCount,
+                LikeCount = userPost.Likes.Count,
+                CommentCount = userPost.Comments.Count,
+                MediaUrl = userPost.MediaUrl
             };
 
             return Ok(model);
         }
 
-        [HttpGet("highres/{postId}")]
-        public async Task<IActionResult> GetHighResolutionImage(int postId)
-        {
-            // Find the post with the given postId
-            var file = await _fileService.GetFileByPostIdAsync(postId);
-
-            // Check if the post has a file attached
-            if (file is null)
-            {
-                return NotFound("File not found");
-            }
-
-            //file.Filename.
-
-            // Return the file as a stream
-            //var stream = new MemoryStream(file.Image);
-            var base64String = Convert.ToBase64String(file.Image);
-            var src = $"data:image/{GetFileExtension(file.Filename)};base64,{base64String}";
-            return Ok(src);
-        }
-
-        [HttpGet("lowres/{postId}")]
-        public async Task<IActionResult> LowResImage(int postId)
-        {
-            // Find the post with the given postId
-            var file = await _fileService.GetFileByPostIdAsync(postId);
-
-            // Check if the post has a file attached
-            if (file is null)
-            {
-                return NotFound("File not found");
-            }
-
-            //file.Filename.
-
-            // Return the file as a stream
-            //var stream = new MemoryStream(file.Image);
-            var base64String = Convert.ToBase64String(file.LowResolutionImage);
-            var src = $"data:image/{GetFileExtension(file.Filename)};base64,{base64String}";
-            return Ok(src);
-        }
-
-        [HttpPost("test")]
-        public async Task<IActionResult> Test([FromForm] TestRequestModel test)
-        {
-            byte[] testArray;
-
-            using (var stream = new MemoryStream())
-            {
-                await test.Test.CopyToAsync(stream);
-                testArray = stream.ToArray();
-            }
-
-            var document = new FileDocument
-            {
-
-                Filename = test.Test.FileName,
-                Image = testArray,
-                PostId = 10
-            };
-
-            await _fileService.InsertAsync(document);
-
-            return Ok();
-        }
-
-        [HttpGet("test")]
-        public async Task<IActionResult> Test()
-        {
-            var file = await _fileService.GetFileByPostIdAsync(10);
-
-            if (file is null)
-                return Ok();
-
-            return Ok(new { test = file.Image, fileName=file.Filename, fileType=$"image/{GetFileExtension(file.Filename)}" });
-        }
-        
         private bool IsImage(IFormFile file)
         {
             return file.ContentType.StartsWith("image/");
         }
-
-        private async Task<Image> GenerateLowResImage(IFormFile file)
+        private async Task<string> ProcessAndUploadImage(IFormFile formFile)
         {
-            using (var stream = file.OpenReadStream())
+            using (Image image = Image.Load(formFile.OpenReadStream()))
             {
-                var image = await Image.LoadAsync(stream);
-                image.Mutate(x => x.Resize(new ResizeOptions
-                {
-                    Size = new Size(500, 500),
-                    Mode = ResizeMode.Max
-                }));
-                return image;
+                Image mutatedImage = MutateImage(image);
+
+                byte[] imageBytes = ConvertImageToBytes(mutatedImage);
+                string imageName = formFile.FileName;
+
+                return await UploadImageToCloudinary(imageName, imageBytes);
             }
         }
 
-        private string? GetFileExtension(string fileName)
+        private Image MutateImage(Image image)
         {
-            if (string.IsNullOrEmpty(fileName))
+            image.Mutate(x => x.Resize(new ResizeOptions
             {
-                return null;
-            }
+                Size = new SixLabors.ImageSharp.Size(500, 500),
+                Mode = ResizeMode.Max
+            }));
 
-            int lastDotIndex = fileName.LastIndexOf('.');
-            if (lastDotIndex == -1)
+            return image;
+        }
+        private byte[] ConvertImageToBytes(Image image)
+        {
+            using (var stream = new MemoryStream())
             {
-                return null;
+                image.Save(stream, new JpegEncoder()); // Specify the appropriate encoder based on your image format
+                return stream.ToArray();
             }
+        }
 
-            return fileName.Substring(lastDotIndex + 1);
+        private async Task<string> UploadImageToCloudinary(string imageName, byte[] imageBytes)
+        {
+            var uploadParams = new ImageUploadParams
+            {
+                File = new FileDescription(imageName, new MemoryStream(imageBytes))
+            };
+
+            var cloudinary = new Cloudinary(new Account("dcjubzmeu", "248951749718234", "9SNdW4kehk_tR6jY4rkDexcz928"));
+
+            ImageUploadResult uploadResult = await cloudinary.UploadAsync(uploadParams);
+
+            return uploadResult.SecureUrl.ToString();
+        }
+        private async Task<string> UploadImageToCloudinary(string imageName, IFormFile image)
+        {
+            using var stream = image.OpenReadStream();
+
+            var uploadParams = new ImageUploadParams
+            {
+                File = new FileDescription(imageName, stream)
+            };
+
+            var cloudinary = new Cloudinary(new Account("dcjubzmeu", "248951749718234", "9SNdW4kehk_tR6jY4rkDexcz928"));
+
+            ImageUploadResult uploadResult = await cloudinary.UploadAsync(uploadParams);
+
+            return uploadResult.SecureUrl.ToString();
         }
     }
     public class PostModel
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string HtmlContent { get; set; }
-        public string ImgSrc { get; set; }
+        public string MediaUrl { get; set; }
         public int LikeCount { get; set; }
         public int CommentCount { get; set; }
     }
-    public class TestRequestModel
-    {
-        public IFormFile Test { get; set; }
-    }
-
     public class ErrorModel
     {
         public string Message { get; set; }
