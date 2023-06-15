@@ -27,7 +27,8 @@ namespace SocialApp.Controllers.v1
         [HttpPut("{postId}")]
         public async Task<IActionResult> PutLike(Guid postId, CancellationToken token)
         {
-            var likedPost = await _context.UserLikes.AnyAsync(item => item.UserId == GetUserId() && item.PostId == postId, token);
+            var likedPost = await _context.UserLikes
+                .AnyAsync(item => item.UserId == GetUserId() && item.PostId == postId, token);
 
             if (likedPost)
             {

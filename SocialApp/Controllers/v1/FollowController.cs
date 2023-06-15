@@ -25,17 +25,17 @@ namespace SocialApp.Controllers.v1
         }
 
         [HttpGet("isfollowing/{targetUserId}")]
-        public async Task<IActionResult> IsFollowing([FromRoute]int targetUserId, CancellationToken token)
+        public async Task<IActionResult> IsFollowing([FromRoute]Guid targetUserId, CancellationToken token)
         {
             var userId = GetUserId();
 
             var user = await _context.Users
                 .Include(item => item.Following)
-                .FirstOrDefaultAsync(item => item.Id == userId);
+                .FirstOrDefaultAsync(item => item.Id == userId, token);
 
             if (user == null) return BadRequest();
 
-            var result = user.Following.FirstOrDefault(item => item.Id == targetUserId);
+            var result = user.Following.FirstOrDefault(item => item.FollowerId == targetUserId);
 
             return Ok(result);
         }
@@ -47,6 +47,7 @@ namespace SocialApp.Controllers.v1
 
             var newFriendRequest = new UserRequest
             {
+                DateCreated = DateTime.UtcNow,
                 SenderUserId = userId,  
                 Status = "Pending",
                 UserReceivingRequestId = request.TargetUserId
@@ -73,15 +74,16 @@ namespace SocialApp.Controllers.v1
         {
             var userId = GetUserId();
 
-            var userRequest = _context
+            var userRequest = await _context
                 .UserRequests
                 .Include(item => item.SendUser)
-                .FirstOrDefault(item => item.SenderUserId == request.UserRequestId &&  item.UserReceivingRequestId == userId);
+                .FirstOrDefaultAsync(item => item.SenderUserId == request.UserRequestId &&  item.UserReceivingRequestId == userId, token);
 
             if (userRequest is null)
                 return BadRequest("No such follow request exists");
 
             userRequest.Status = "Accepted";
+            userRequest.DateUpdated = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(CancellationToken.None);
 
@@ -93,15 +95,16 @@ namespace SocialApp.Controllers.v1
         {
             var userId = GetUserId();
 
-            var userRequest = _context
+            var userRequest = await _context
                 .UserRequests
                 .Include(item => item.SendUser)
-                .FirstOrDefault(item => item.Id == request.UserRequestId);
+                .FirstOrDefaultAsync(item => item.Id == request.UserRequestId, token);
 
             if (userRequest is null)
                 return BadRequest("No such follow request exists");
 
             userRequest.Status = "Rejected";
+            userRequest.DateUpdated = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(CancellationToken.None);
 
@@ -115,7 +118,7 @@ namespace SocialApp.Controllers.v1
 
             var newFollowRequests = await _context.UserRequests
                 .Where(item => item.UserReceivingRequestId == userId && item.Status == "Pending")
-                .ToListAsync();
+                .ToListAsync(token);
 
             return Ok(newFollowRequests);
         }

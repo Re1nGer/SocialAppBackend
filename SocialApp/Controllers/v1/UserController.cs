@@ -120,7 +120,7 @@ namespace SocialApp.Controllers.v1
 
             _context.Users.Update(user);
                 
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(token);
 
             return Ok(new { backgroundImageLink });
         }
