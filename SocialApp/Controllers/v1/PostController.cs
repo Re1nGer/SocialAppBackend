@@ -8,6 +8,7 @@ using Persistance;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using SocialApp.Models;
 
 namespace SocialApp.Controllers.v1
 {
@@ -83,6 +84,14 @@ namespace SocialApp.Controllers.v1
                 .Where(item => item.UserId == GetUserId())
                 .AsSplitQuery()
                 .AsNoTrackingWithIdentityResolution()
+                .Select(item => new PostModel
+                {
+                    Id = item.Id,
+                    Message = item.Message,
+                    LikeCount = item.Likes.Count,
+                    CommentCount = item.Comments.Count,
+                    MediaUrl = item.LowResMediaUrl
+                })
                 .ToListAsync(token);
 
             return Ok(userPosts);
@@ -115,7 +124,7 @@ namespace SocialApp.Controllers.v1
             var model = new PostModel
             {
                 Id =  userPost.Id,
-                HtmlContent = userPost.Message,
+                Message = userPost.Message,
                 LikeCount = userPost.Likes.Count,
                 CommentCount = userPost.Comments.Count,
                 MediaUrl = userPost.MediaUrl
@@ -192,7 +201,7 @@ namespace SocialApp.Controllers.v1
     public class PostModel
     {
         public Guid Id { get; set; }
-        public string HtmlContent { get; set; }
+        public string Message { get; set; }
         public string MediaUrl { get; set; }
         public int LikeCount { get; set; }
         public int CommentCount { get; set; }
@@ -201,10 +210,4 @@ namespace SocialApp.Controllers.v1
     {
         public string Message { get; set; }
     }
-
-    public class CreatePostRequest
-    {
-        public string HtmlContent { get; set; }
-        public IFormFile Image { get; set; }
-    } 
 }

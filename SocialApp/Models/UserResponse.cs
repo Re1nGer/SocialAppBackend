@@ -9,6 +9,16 @@ public class UserResponse
     public string? LowResImageLink { get; set; }
     public string? HighResImageLink { get; set; }
     public string? ProfileBackgroundImagelink { get; set; }
-    public ICollection<UserRequest>? UserRequests { get; set; }
-    public ICollection<UserPost>? UserPosts { get; set; }
+    public List<UserRequest>? UserRequests { get; set; }
+    public List<UserPostResponse>? UserPosts { get; set; }
+}
+
+public class UserPostResponse
+{
+    public Guid Id { get; set; }
+    public string Message { get; set; }
+    public string MediaUrl { get; set; }
+    public string LowResMediaUrl { get; set; }
+    public int LikeCount { get; set; }
+    public int CommentCount { get; set; }
 }

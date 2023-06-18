@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using SocialApp.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -31,17 +32,20 @@ namespace SocialApp.Controllers.v1
 
             var user = await _context.Users
                 .Include(item => item.Following)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(item => item.Id == userId, token);
 
             if (user == null) return BadRequest();
 
-            var result = user.Following.FirstOrDefault(item => item.FollowerId == targetUserId);
+            var result = user
+                .Following
+                .FirstOrDefault(item => item.FollowerId == targetUserId);
 
             return Ok(result);
         }
 
         [HttpPost("")]
-        public async Task<IActionResult> Follow(FriedRequest request, CancellationToken token)
+        public async Task<IActionResult> Follow(FriendRequest request, CancellationToken token)
         {
             var userId = GetUserId();
 
@@ -77,14 +81,24 @@ namespace SocialApp.Controllers.v1
             var userRequest = await _context
                 .UserRequests
                 .Include(item => item.SendUser)
-                .FirstOrDefaultAsync(item => item.SenderUserId == request.UserRequestId &&  item.UserReceivingRequestId == userId, token);
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(item => item.SenderUserId == userId &&  item.UserReceivingRequestId == request.UserRequestId, token);
 
             if (userRequest is null)
                 return BadRequest("No such follow request exists");
 
             userRequest.Status = "Accepted";
+            
             userRequest.DateUpdated = DateTime.UtcNow;
+            
+            var user = await _context
+                .Users
+                .Include(item => item.Following)
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(item => item.Id == userId, token);
 
+            user.Following.Add(new() { FollowerId = request.UserRequestId, FollowingId = userId, CreatedAt = DateTime.UtcNow});
+            
             await _context.SaveChangesAsync(CancellationToken.None);
 
             return Ok();
@@ -122,14 +136,5 @@ namespace SocialApp.Controllers.v1
 
             return Ok(newFollowRequests);
         }
-    }
-
-    public class FriedRequest
-    {
-        public Guid TargetUserId { get; set; }
-    }
-    public class AcceptRequest
-    {
-        public Guid UserRequestId { get; set; }
     }
 }

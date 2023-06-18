@@ -1,6 +1,5 @@
 ﻿using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
-using Domain.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,29 +29,44 @@ namespace SocialApp.Controllers.v1
 
         //add pagination
         [HttpGet("list")]
-        public async Task<IActionResult> GetUserList([FromQuery] string? q)
+        public async Task<IActionResult> GetUserList([FromQuery] string? q, CancellationToken token)
         {
-            return Ok(await _context.Users.Where(item => item.Username.Contains(q) || q.Contains(item.Username)).ToListAsync());
+            return Ok(await _context.Users
+                .Where(item => item.Username.Contains(q) || q.Contains(item.Username))
+                .ToListAsync(token));
         }
 
         [HttpGet("")]
-        public async Task<IActionResult> GetUser()
+        public async Task<IActionResult> GetUser(CancellationToken token)
         {
             var userId = GetUserId();
 
             var user = await _context.Users
-                .Include(item => item.UserPosts)
-                .FirstOrDefaultAsync(item => item.Id == userId);
+                .FirstOrDefaultAsync(item => item.Id == userId, token);
+
+            var userPosts = await _context.UserPosts
+                .Include(item => item.Comments)
+                .Include(item => item.Likes)
+                .AsSplitQuery()
+                .Where(item => item.UserId == userId)
+                .ToListAsync(token);
             
             var requests = await _context.UserRequests
                 .Where(item => item.UserReceivingRequestId == userId && item.Status == "Pending")
-                .ToListAsync();
+                .ToListAsync(token);
             
             var response = new UserResponse()
             {
                 Id = userId,
                 Username = user.Username,
-                UserPosts = user.UserPosts.ToList(),
+                UserPosts = userPosts.Select(item => new UserPostResponse
+                {
+                    Id = item.Id,
+                    LowResMediaUrl = item.LowResMediaUrl,
+                    Message = item.Message,
+                    LikeCount = item.Likes.Count,
+                    CommentCount = item.Comments.Count
+                }).ToList(),
                 UserRequests = requests,
                 HighResImageLink = user.HighResImageLink,
                 LowResImageLink = user.LowResImageLink,
@@ -63,14 +77,46 @@ namespace SocialApp.Controllers.v1
         }
         
         [HttpGet("{userId}")]
-        public async Task<IActionResult> GetUserById(Guid userId)
+        public async Task<IActionResult> GetUserById(Guid userId, CancellationToken token)
         {
             var user = await _context.Users
                 .Include(item => item.UserPosts)
-                .FirstOrDefaultAsync(item => item.Id == userId);
-            
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(item => item.Id == userId, token);
 
-            return Ok(user);
+            if (user is null) return NotFound();
+            
+            var userPosts = await _context.UserPosts
+                .Include(item => item.Comments)
+                .Include(item => item.Likes)
+                .AsSplitQuery()
+                .AsNoTracking()
+                .Where(item => item.UserId == userId)
+                .ToListAsync(token);
+            
+            var requests = await _context.UserRequests
+                .Where(item => item.UserReceivingRequestId == userId && item.Status == "Pending")
+                .ToListAsync(token);
+            
+            var response = new UserResponse()
+            {
+                Id = userId,
+                Username = user.Username,
+                UserPosts = userPosts.Select(item => new UserPostResponse
+                {
+                    Id = item.Id,
+                    LowResMediaUrl = item.LowResMediaUrl,
+                    Message = item.Message,
+                    LikeCount = item.Likes.Count,
+                    CommentCount = item.Comments.Count
+                }).ToList(),
+                UserRequests = requests,
+                HighResImageLink = user.HighResImageLink,
+                LowResImageLink = user.LowResImageLink,
+                ProfileBackgroundImagelink = user.ProfileBackgroundImagelink
+            };
+            
+            return Ok(response);
         }
         
         [HttpGet("requests/{userId}")]
@@ -88,7 +134,7 @@ namespace SocialApp.Controllers.v1
         {
             var userId = GetUserId();
 
-            var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId);
+            var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId, token);
 
             var lowResImage = await ProcessAndUploadImage(request.Image);
 
@@ -102,7 +148,7 @@ namespace SocialApp.Controllers.v1
 
             _context.Users.Update(user);
                 
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(token);
 
             return Ok();
         }
@@ -112,7 +158,7 @@ namespace SocialApp.Controllers.v1
         {
             var userId = GetUserId();
 
-            var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId);
+            var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId, token);
 
             var backgroundImageLink = await UploadImageToCloudinary(request.Image.Name, request.Image);
 
@@ -185,9 +231,5 @@ namespace SocialApp.Controllers.v1
 
             return uploadResult.SecureUrl.ToString();
         }
-    }
-    public class UpdateProfilePictureRequest
-    {
-        public IFormFile Image { get; set; }
     }
 }
