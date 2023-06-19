@@ -27,8 +27,10 @@ namespace SocialApp.Controllers.v1
         [HttpPut("{postId}")]
         public async Task<IActionResult> PutLike(Guid postId, CancellationToken token)
         {
+            var userId = GetUserId();
+            
             var likedPost = await _context.UserLikes
-                .AnyAsync(item => item.UserId == GetUserId() && item.PostId == postId, token);
+                .AnyAsync(item => item.UserId == userId && item.PostId == postId, token);
 
             if (likedPost)
             {
@@ -42,16 +44,20 @@ namespace SocialApp.Controllers.v1
                 CreatedAt = DateTime.UtcNow,
             };
 
-            await _context.UserLikes.AddAsync(newLike); 
-            await _context.SaveChangesAsync();
+            await _context.UserLikes.AddAsync(newLike, token); 
+            await _context.SaveChangesAsync(CancellationToken.None);
             return Ok();
         }
 
         [HttpDelete("{postId}")]
         public async Task<IActionResult> DeleteLike(Guid postId, CancellationToken token)
         {
+
+            var userId = GetUserId();
+            
             var likedPost = await _context.UserLikes
-                .AnyAsync(item => item.UserId == GetUserId() && item.PostId == postId, token);
+                .AnyAsync(item => item.UserId == userId
+                                  && item.PostId == postId, token);
 
             if (!likedPost)
             {
@@ -59,7 +65,8 @@ namespace SocialApp.Controllers.v1
             }
 
             var like = await _context.UserLikes
-                .FirstAsync(item => item.PostId == postId && item.UserId == GetUserId());
+                .FirstAsync(item => item.PostId == postId
+                                    && item.UserId == userId, token);
 
             _context.UserLikes.Remove(like);
 
@@ -67,21 +74,5 @@ namespace SocialApp.Controllers.v1
 
             return Ok();    
         }
-
-
-        [HttpGet("{postId}")]
-        public async Task<IActionResult> GetLike(Guid postId, CancellationToken token)
-        {
-            var likedPost = await _context.UserLikes
-                .AnyAsync(item => item.UserId == GetUserId() && item.PostId == postId, token);
-
-            if (!likedPost)
-            {
-                return Ok(false);
-            }
-
-            return Ok(true);
-        }
-
     }
 }

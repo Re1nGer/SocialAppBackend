@@ -78,10 +78,12 @@ namespace SocialApp.Controllers.v1
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> GetAllUserPosts(CancellationToken token)
         {
+            var userId = GetUserId();
+            
             var userPosts = await _context.UserPosts
                 .Include(item => item.Comments)
                 .Include(item => item.Likes)
-                .Where(item => item.UserId == GetUserId())
+                .Where(item => item.UserId == userId)
                 .AsSplitQuery()
                 .AsNoTrackingWithIdentityResolution()
                 .Select(item => new PostModel
@@ -114,22 +116,39 @@ namespace SocialApp.Controllers.v1
 
         [HttpGet("{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task<IActionResult> GetPostById(Guid id)
+        public async Task<IActionResult> GetPostById(Guid id, CancellationToken token)
         {
+            var userId = GetUserId();
+            
             var userPost = await _context.UserPosts
-                .Include(item => item.Comments)
-                .Include(item => item.Likes)
-                .FirstOrDefaultAsync(item => item.Id == id);
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == id, token);
+
+            if (userPost is null) return NotFound();
+
+            var hasUserLike = await _context
+                .UserLikes
+                .AnyAsync(item => item.PostId == id
+                                  && item.UserId == userId, token);
+
+            var likeCount = await _context.UserLikes
+                .Where(item => item.PostId == id)
+                .CountAsync(token);
+
+            var commentCount = await _context.UserComments
+                .Where(item => item.PostId == id)
+                .CountAsync(token);
 
             var model = new PostModel
             {
                 Id =  userPost.Id,
                 Message = userPost.Message,
-                LikeCount = userPost.Likes.Count,
-                CommentCount = userPost.Comments.Count,
-                MediaUrl = userPost.MediaUrl
+                LikeCount = likeCount,
+                HasUserLike = hasUserLike,
+                MediaUrl = userPost.MediaUrl,
+                CommentCount = commentCount,
             };
-
+            
             return Ok(model);
         }
 
@@ -201,11 +220,14 @@ namespace SocialApp.Controllers.v1
     public class PostModel
     {
         public Guid Id { get; set; }
+        public Guid Userid { get; set; }
         public string Message { get; set; }
         public string MediaUrl { get; set; }
+        public bool HasUserLike { get; set; }
         public int LikeCount { get; set; }
         public int CommentCount { get; set; }
     }
+    
     public class ErrorModel
     {
         public string Message { get; set; }

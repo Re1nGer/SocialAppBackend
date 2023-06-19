@@ -84,14 +84,17 @@ namespace SocialApp.Controllers.v1
             // Create a new UserComment object and set its properties
             var commentExists = await _context
                 .UserComments
-                .AnyAsync(item => item.PostId == postId && item.Id == commentId && item.UserId == userId, token);
+                .AnyAsync(item => item.PostId == postId
+                                  && item.Id == commentId && item.UserId == userId, token);
 
             if (!commentExists)
             {
                 return NotFound();
             }
 
-            var userComment = await _context.UserComments.FirstAsync(item => item.Id == commentId, token);
+            var userComment = await _context
+                .UserComments
+                .FirstAsync(item => item.Id == commentId, token);
 
             // Add the new UserComment object to the UserComments table
             _context.UserComments.Remove(userComment);
@@ -109,7 +112,8 @@ namespace SocialApp.Controllers.v1
             // Create a new UserComment object and set its properties
             var commentExists = await _context
                 .UserComments
-                .AnyAsync(item => item.PostId == request.PostId && item.Id == request.CommentId && item.UserId == userId);
+                .AnyAsync(item => item.PostId == request.PostId
+                  && item.Id == request.CommentId && item.UserId == userId, token);
 
             if (!commentExists)
             {

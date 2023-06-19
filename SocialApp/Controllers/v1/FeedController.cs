@@ -32,6 +32,8 @@ namespace SocialApp.Controllers.v1
 
             var user = await _context.Users
                 .Include(item => item.Following)
+                .AsSplitQuery()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(item => item.Id == userId, token);
 
             if (user is null) return NotFound();
@@ -44,7 +46,6 @@ namespace SocialApp.Controllers.v1
                 .UserPosts
                 .Include(item => item.User)
                 .Include(item => item.Likes)
-                .Include(item => item.Comments)
                 .AsSplitQuery()
                 .AsNoTracking()
                 .OrderByDescending(item => item.CreatedAt)
