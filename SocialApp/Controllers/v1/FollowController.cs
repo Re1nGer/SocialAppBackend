@@ -82,7 +82,7 @@ namespace SocialApp.Controllers.v1
                 .UserRequests
                 .Include(item => item.SendUser)
                 .AsSplitQuery()
-                .FirstOrDefaultAsync(item => item.SenderUserId == userId &&  item.UserReceivingRequestId == request.UserRequestId, token);
+                .FirstOrDefaultAsync(item => item.SenderUserId == request.UserRequestId &&  item.UserReceivingRequestId == userId, token);
 
             if (userRequest is null)
                 return BadRequest("No such follow request exists");

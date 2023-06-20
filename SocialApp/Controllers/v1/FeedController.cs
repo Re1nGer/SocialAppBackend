@@ -32,6 +32,7 @@ namespace SocialApp.Controllers.v1
 
             var user = await _context.Users
                 .Include(item => item.Following)
+                .Include(item => item.Followers)
                 .AsSplitQuery()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(item => item.Id == userId, token);
@@ -40,20 +41,34 @@ namespace SocialApp.Controllers.v1
 
             if (user.Following == null) return Ok();
             
-            var followingIds = user.Following.Select(item => item.FollowingId).ToList();
-
-            var followingPosts = await _context
-                .UserPosts
-                .Include(item => item.User)
+            var followingIds = user
+                .Followers
+                .Select(item => item.FollowerId)
+                .ToList();
+            
+            var userPosts = await _context.UserPosts
                 .Include(item => item.Likes)
-                .AsSplitQuery()
-                .AsNoTracking()
-                .OrderByDescending(item => item.CreatedAt)
+                .Include(item => item.Comments)
+                .Include(item => item.User)
                 .Where(item => followingIds.Contains(item.UserId))
                 .ToListAsync(token);
+            
+           var result = userPosts     
+                .Select(item => new PostModel
+                    {
+                        Id = item.Id,
+                        Message = item.Message,
+                        LikeCount = item.Likes.Count,
+                        CommentCount = item.Comments.Count,
+                        MediaUrl = item.LowResMediaUrl,
+                        UserImageLink = item.User.LowResImageLink,
+                        Username = item.User.Username,
+                        HasUserLike = item.Likes.Any(like => like.UserId == userId)
+                    })
+                .ToList();
 
             // Return a response indicating success
-            return Ok(followingPosts);
+            return Ok(result);
         }
     }
 }

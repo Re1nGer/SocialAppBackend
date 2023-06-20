@@ -221,6 +221,8 @@ namespace SocialApp.Controllers.v1
     {
         public Guid Id { get; set; }
         public Guid Userid { get; set; }
+        public string Username { get; set;  }
+        public string UserImageLink { get; set; }
         public string Message { get; set; }
         public string MediaUrl { get; set; }
         public bool HasUserLike { get; set; }
