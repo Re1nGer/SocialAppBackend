@@ -107,16 +107,17 @@ namespace SocialApp.Controllers.v1
             var userRequest = await _context
                 .UserRequests
                 .Include(item => item.SendUser)
-                .FirstOrDefaultAsync(item => item.SenderUserId == request.UserRequestId
-                                             && item.UserReceivingRequestId == userId, token);
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(item => item.SenderUserId == request.UserRequestId && item.UserReceivingRequestId == userId, token);
 
             if (userRequest is null)
                 return BadRequest("No such follow request exists");
 
             userRequest.Status = "Rejected";
+            
             userRequest.DateUpdated = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync(CancellationToken.None);
+            await _context.SaveChangesAsync(token);
 
             return Ok();
         }

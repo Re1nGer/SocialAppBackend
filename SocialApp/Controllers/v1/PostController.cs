@@ -117,12 +117,16 @@ namespace SocialApp.Controllers.v1
         public async Task<IActionResult> GetPostById(Guid id, CancellationToken token)
         {
             var userId = GetUserId();
+
             
             var userPost = await _context.UserPosts
                 .AsNoTracking()
                 .FirstOrDefaultAsync(item => item.Id == id, token);
 
             if (userPost is null) return NotFound();
+            
+            var user = await _context.Users
+                .FirstOrDefaultAsync(item => item.Id == userPost.UserId, token);
 
             var hasUserLike = await _context
                 .UserLikes
@@ -145,6 +149,8 @@ namespace SocialApp.Controllers.v1
                 HasUserLike = hasUserLike,
                 MediaUrl = userPost.MediaUrl,
                 CommentCount = commentCount,
+                UserImageLink = user.LowResImageLink,
+                Username = user.Username
             };
             
             return Ok(model);

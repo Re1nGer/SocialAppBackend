@@ -5,6 +5,7 @@ using System.Security.Claims;
 using Firebase.Auth;
 using Microsoft.EntityFrameworkCore;
 using SocialApp.Models;
+using User = Domain.Entities.User;
 
 namespace SocialApp.Controllers.v1
 {
@@ -28,6 +29,7 @@ namespace SocialApp.Controllers.v1
 
             try
             {
+
                 var authLink = await provider.SignInWithEmailAndPasswordAsync(request.Email, request.Password);
                 //authLink.
                 //var user = await provider.GetUserAsync(authLink);
@@ -49,17 +51,62 @@ namespace SocialApp.Controllers.v1
                 return BadRequest(ex.ResponseData);
             }
         }
-
-        [HttpPost("signup")]
-        public async Task<IActionResult> SignUp([FromBody] SignUpRequest request, CancellationToken token)
+        
+        [HttpPost("signinwithgoogle")]
+        public async Task<IActionResult> SignInWithGoogle([FromBody] SignInGoogleRequest request, CancellationToken token)
         {
             FirebaseAuthProvider provider = new FirebaseAuthProvider(new FirebaseConfig(ApiKey));
 
             try
             {
-                var authLink = await provider.CreateUserWithEmailAndPasswordAsync(request.Email, request.Password);
+                var authLink = await provider.SignInWithGoogleIdTokenAsync(request.GoogleIdToken);
+                
+                //authLink.
+                //var user = await provider.GetUserAsync(authLink);
 
-                var user = new Domain.Entities.User
+                var user = await _context.Users.FirstOrDefaultAsync(item => item.Email == authLink.User.Email, token);
+
+                if (user is null)
+                {
+                    var newUser = new Domain.Entities.User
+                    {
+                        Email = authLink.User.Email,
+                        Username = authLink.User.DisplayName,
+                        RegisteredAt = DateTime.UtcNow,
+                    };
+
+                    await _context.Users.AddAsync(newUser, token);
+
+                    await _context.SaveChangesAsync(token);
+                }
+                
+
+                var claims = new List<Claim>() {  new Claim("UserId", user.Id.ToString()) }.ToArray();
+
+                var accessToken = JwtService.GenerateJwtToken(30, claims);
+
+                var refreshToken = JwtService.GenerateJwtToken(60, claims);
+                
+                SetTokenCookie(refreshToken);
+
+                return Ok(new { token = accessToken });
+
+            } catch (FirebaseAuthException ex)
+            {
+                return BadRequest(ex.ResponseData);
+            }
+        }
+
+        [HttpPost("signup")]
+        public async Task<IActionResult> SignUp([FromBody] SignUpRequest request, CancellationToken token)
+        {
+            FirebaseAuthProvider provider = new FirebaseAuthProvider(new FirebaseConfig(ApiKey));
+            
+            try
+            {
+                await provider.CreateUserWithEmailAndPasswordAsync(request.Email, request.Password);
+
+                var user = new User
                 {
                     Email = request.Email,
                     Username = request.Email,
