@@ -10,18 +10,13 @@ namespace SocialApp.Controllers.v1
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class ChatController : ControllerBase
+    public class ChatController : BaseController
     {
         private readonly ApplicationDbContext _context;
 
         public ChatController(ApplicationDbContext context)
         {
             _context = context;
-        }
-
-        private Guid GetUserId()
-        {
-            return Guid.Parse(User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value);
         }
 
         [HttpGet]

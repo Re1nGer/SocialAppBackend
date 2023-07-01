@@ -21,11 +21,6 @@ namespace SocialApp.Controllers.v1
             _context = context;
         }
 
-        private Guid GetUserId()
-        {
-            return Guid.Parse(User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value);
-        }
-
         [HttpPost("signin")]
         public async Task<IActionResult> SignIn([FromBody] SignUpRequest request)
         {

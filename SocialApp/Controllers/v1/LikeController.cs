@@ -10,14 +10,9 @@ namespace SocialApp.Controllers.v1
     [Route("api/v1/[controller]")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class LikeController : ControllerBase
+    public class LikeController : BaseController
     {
         private readonly ApplicationDbContext _context;
-
-        private Guid GetUserId()
-        {
-            return Guid.Parse(User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value);
-        }
 
         public LikeController(ApplicationDbContext context)
         {
@@ -40,7 +35,7 @@ namespace SocialApp.Controllers.v1
             var newLike = new Like
             {
                 PostId = postId, 
-                UserId = GetUserId(),
+                UserId = userId,
                 CreatedAt = DateTime.UtcNow,
             };
 

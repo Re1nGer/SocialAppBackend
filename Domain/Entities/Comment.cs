@@ -6,6 +6,7 @@ namespace Domain.Entities
         public Guid Id { get; set; }
         public string Message { get; set; }
         public Guid UserId { get; set; }
+        public User User { get; set; }
         public string Username { get; set; }
         public Guid? PostId { get; set; } 
         public UserPost? UserPost { get; set; }

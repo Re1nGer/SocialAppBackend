@@ -11,18 +11,13 @@ namespace SocialApp.Controllers.v1
     [ApiController]
     [Route("api/v1/[controller]")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class CommentController : ControllerBase
+    public class CommentController : BaseController
     {
         private readonly ApplicationDbContext _context;
 
         public CommentController(ApplicationDbContext context)
         {
             _context = context;
-        }
-
-        private Guid GetUserId()
-        {
-            return Guid.Parse(User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value);
         }
 
         [HttpGet]

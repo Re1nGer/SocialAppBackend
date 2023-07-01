@@ -14,13 +14,8 @@ namespace SocialApp.Controllers.v1
 {
     [ApiController]
     [Route("api/v1/[controller]")]
-    public class PostController : ControllerBase
+    public class PostController : BaseController
     {
-        private Guid GetUserId()
-        {
-            return Guid.Parse(User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value);
-        }
-
         private readonly ApplicationDbContext _context;
 
         public PostController(ApplicationDbContext context)
@@ -55,13 +50,16 @@ namespace SocialApp.Controllers.v1
 
                 await _context.UserPosts.AddAsync(postModel, cancellationToken);
 
-                var lowresImageUrl = await ProcessAndUploadImage(request.Image);
+                if (request.Image is not null)
+                {
+                    var lowresImageUrl = await ProcessAndUploadImage(request.Image);
 
-                var highResImageUrl = await UploadImageToCloudinary(request.Image.Name, request.Image);
+                    var highResImageUrl = await UploadImageToCloudinary(request.Image.Name, request.Image);
 
-                postModel.LowResMediaUrl = lowresImageUrl;
+                    postModel.LowResMediaUrl = lowresImageUrl;
 
-                postModel.MediaUrl = highResImageUrl;
+                    postModel.MediaUrl = highResImageUrl;
+                }
 
                 await _context.SaveChangesAsync(cancellationToken);
 
@@ -216,22 +214,5 @@ namespace SocialApp.Controllers.v1
 
             return uploadResult.SecureUrl.ToString();
         }
-    }
-    public class PostModel
-    {
-        public Guid Id { get; set; }
-        public Guid Userid { get; set; }
-        public string Username { get; set;  }
-        public string UserImageLink { get; set; }
-        public string Message { get; set; }
-        public string MediaUrl { get; set; }
-        public bool HasUserLike { get; set; }
-        public int LikeCount { get; set; }
-        public int CommentCount { get; set; }
-    }
-    
-    public class ErrorModel
-    {
-        public string Message { get; set; }
     }
 }

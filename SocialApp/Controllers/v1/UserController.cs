@@ -13,18 +13,13 @@ namespace SocialApp.Controllers.v1
     [ApiController]
     [Route("api/v1/[controller]")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class UserController : ControllerBase
+    public class UserController : BaseController
     {
         private readonly ApplicationDbContext _context;
 
         public UserController(ApplicationDbContext context)
         {
             _context = context;
-        }
-
-        private Guid GetUserId()
-        {
-            return Guid.Parse(User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value);
         }
 
         //add pagination

@@ -11,13 +11,8 @@ namespace SocialApp.Controllers.v1
     [ApiController]
     [Route("api/v1/[controller]")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class FollowController : ControllerBase
+    public class FollowController : BaseController
     {
-        private Guid GetUserId()
-        {
-            return Guid.Parse(User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value);
-        }
-
         private readonly ApplicationDbContext _context;
 
         public FollowController(ApplicationDbContext context)
@@ -82,7 +77,7 @@ namespace SocialApp.Controllers.v1
                 .UserRequests
                 .Include(item => item.SendUser)
                 .AsSplitQuery()
-                .FirstOrDefaultAsync(item => item.SenderUserId == request.UserRequestId &&  item.UserReceivingRequestId == userId, token);
+                .FirstOrDefaultAsync(item => item.SenderUserId == request.UserRequestId && item.UserReceivingRequestId == userId, token);
 
             if (userRequest is null)
                 return BadRequest("No such follow request exists");
@@ -112,7 +107,8 @@ namespace SocialApp.Controllers.v1
             var userRequest = await _context
                 .UserRequests
                 .Include(item => item.SendUser)
-                .FirstOrDefaultAsync(item => item.Id == request.UserRequestId, token);
+                .FirstOrDefaultAsync(item => item.SenderUserId == request.UserRequestId
+                                             && item.UserReceivingRequestId == userId, token);
 
             if (userRequest is null)
                 return BadRequest("No such follow request exists");

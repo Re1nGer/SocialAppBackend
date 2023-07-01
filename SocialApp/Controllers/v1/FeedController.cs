@@ -3,24 +3,20 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Persistance;
+using SocialApp.Models;
 
 namespace SocialApp.Controllers.v1
 {
     [Route("api/v1/[controller]")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class FeedController : ControllerBase
+    public class FeedController : BaseController
     {
         private readonly ApplicationDbContext _context;
 
         public FeedController(ApplicationDbContext context)
         {
             _context = context;
-        }
-        
-        private Guid GetUserId()
-        {
-            return Guid.Parse(User.Claims.FirstOrDefault(item => item.Type == "UserId")?.Value!);
         }
 
         [HttpGet("")]
@@ -39,33 +35,34 @@ namespace SocialApp.Controllers.v1
 
             if (user is null) return NotFound();
 
-            if (user.Following == null) return Ok();
+            if (user.Following is null) return Ok();
             
             var followingIds = user
                 .Followers
                 .Select(item => item.FollowerId)
                 .ToList();
-            
-            var userPosts = await _context.UserPosts
+
+            var userPosts = _context.UserPosts
                 .Include(item => item.Likes)
                 .Include(item => item.Comments)
                 .Include(item => item.User)
                 .Where(item => followingIds.Contains(item.UserId))
-                .ToListAsync(token);
+                .OrderByDescending(item => item.CreatedAt)
+                .Take(10);
             
-           var result = userPosts     
-                .Select(item => new PostModel
-                    {
-                        Id = item.Id,
-                        Message = item.Message,
-                        LikeCount = item.Likes.Count,
-                        CommentCount = item.Comments.Count,
-                        MediaUrl = item.LowResMediaUrl,
-                        UserImageLink = item.User.LowResImageLink,
-                        Username = item.User.Username,
-                        HasUserLike = item.Likes.Any(like => like.UserId == userId)
-                    })
-                .ToList();
+           var result = userPosts.Select(item => new PostModel
+                {
+                    Id = item.Id,
+                    Message = item.Message,
+                    LikeCount = item.Likes.Count,
+                    CommentCount = item.Comments.Count,
+                    MediaUrl = item.LowResMediaUrl,
+                    UserImageLink = item.User.LowResImageLink,
+                    Username = item.User.Username,
+                    UserId = item.UserId,
+                    HasUserLike = item.Likes.Any(like => like.UserId == userId)
+                })
+            .ToList();
 
             // Return a response indicating success
             return Ok(result);
