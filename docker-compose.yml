@@ -7,4 +7,4 @@
       context: .
       dockerfile: SocialApp/Dockerfile
     ports:
-      - 8202:80
+      - 5191:80
