@@ -1,0 +1,10 @@
+﻿services:
+  socialapp:
+    image: socialapp
+    env_file:
+      - socialapp.env
+    build:
+      context: .
+      dockerfile: SocialApp/Dockerfile
+      
+      
