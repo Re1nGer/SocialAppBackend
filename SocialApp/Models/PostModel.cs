@@ -9,6 +9,7 @@ public class PostModel
     public string Message { get; set; }
     public string MediaUrl { get; set; }
     public bool HasUserLike { get; set; }
+    public bool HasUserSaved { get; set; }
     public int LikeCount { get; set; }
     public int CommentCount { get; set; }
 }

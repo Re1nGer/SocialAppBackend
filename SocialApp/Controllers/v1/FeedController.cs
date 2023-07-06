@@ -60,7 +60,8 @@ namespace SocialApp.Controllers.v1
                     UserImageLink = item.User.LowResImageLink,
                     Username = item.User.Username,
                     UserId = item.UserId,
-                    HasUserLike = item.Likes.Any(like => like.UserId == userId)
+                    HasUserLike = item.Likes.Any(like => like.UserId == userId),
+                    HasUserSaved = item.PostBookmarks.Any(book => book.UserId == userId && book.UserPostId == item.Id)
                 })
             .ToList();
 

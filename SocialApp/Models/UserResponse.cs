@@ -9,6 +9,7 @@ public class UserResponse
     public string? LowResImageLink { get; set; }
     public string? HighResImageLink { get; set; }
     public string? ProfileBackgroundImagelink { get; set; }
+    public List<string>? PostBookmarks { get; set; }
     public List<UserRequest>? UserRequests { get; set; }
     public List<UserPostResponse>? UserPosts { get; set; }
 }

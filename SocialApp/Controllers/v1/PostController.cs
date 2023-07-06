@@ -117,7 +117,6 @@ namespace SocialApp.Controllers.v1
         public async Task<IActionResult> GetPostById(Guid id, CancellationToken token)
         {
             var userId = GetUserId();
-
             
             var userPost = await _context.UserPosts
                 .AsNoTracking()
@@ -132,6 +131,10 @@ namespace SocialApp.Controllers.v1
                 .UserLikes
                 .AnyAsync(item => item.PostId == id
                                   && item.UserId == userId, token);
+
+            var hasUserSaved = await _context
+                .PostBookmarks
+                .AnyAsync(item => item.UserPostId == id && item.UserId == userId, token);
 
             var likeCount = await _context.UserLikes
                 .Where(item => item.PostId == id)
@@ -150,12 +153,76 @@ namespace SocialApp.Controllers.v1
                 MediaUrl = userPost.MediaUrl,
                 CommentCount = commentCount,
                 UserImageLink = user.LowResImageLink,
-                Username = user.Username
+                Username = user.Username,
+                HasUserSaved = hasUserSaved
             };
             
             return Ok(model);
         }
+        
+        [HttpPost("bookmark/{postId}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> PostBookmark(Guid postId, CancellationToken token)
+        {
+            var userId = GetUserId();
 
+            var user = await _context.Users
+                .FirstOrDefaultAsync(item => item.Id == userId, token);
+
+            if (user is null)
+                return NotFound("User Is Not Found");
+            
+            var userPost = await _context.UserPosts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == postId, token);
+
+            if (userPost is null) return NotFound();
+
+            var bookmark = new PostBookmark
+            {
+                UserPostId = postId,
+                UserId = userId
+            };
+
+            if (user.PostBookmarks is null)
+            {
+                user.PostBookmarks = new List<PostBookmark> { bookmark };
+            }
+            
+            else user.PostBookmarks.Add(bookmark);
+            
+            await _context.PostBookmarks.AddAsync(bookmark, token);
+
+            await _context.SaveChangesAsync(token);
+            
+            return Ok();
+        }
+        
+        [HttpDelete("bookmark/{postId:guid}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> DeleteBookmark(Guid postId, CancellationToken token)
+        {
+            var userId = GetUserId();
+            
+            var userPost = await _context.UserPosts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == postId, token);
+
+            if (userPost is null) return NotFound();
+
+            var bookmark = await _context.PostBookmarks
+                .FirstOrDefaultAsync(item => item.UserPostId == postId && userId == item.UserId, token);
+
+            if (bookmark is null)
+                return NotFound("Book Mark Is Not Found");
+
+            _context.PostBookmarks.Remove(bookmark);
+
+            await _context.SaveChangesAsync(token);
+            
+            return Ok();
+        }
+        
         private bool IsImage(IFormFile file)
         {
             return file.ContentType.StartsWith("image/");

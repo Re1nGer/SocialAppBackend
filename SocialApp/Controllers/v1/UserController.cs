@@ -37,6 +37,8 @@ namespace SocialApp.Controllers.v1
             var userId = GetUserId();
 
             var user = await _context.Users
+                .Include(item => item.PostBookmarks)
+                .AsSingleQuery()
                 .FirstOrDefaultAsync(item => item.Id == userId, token);
 
             var userPosts = await _context.UserPosts
@@ -65,7 +67,8 @@ namespace SocialApp.Controllers.v1
                 UserRequests = requests,
                 HighResImageLink = user.HighResImageLink,
                 LowResImageLink = user.LowResImageLink,
-                ProfileBackgroundImagelink = user.ProfileBackgroundImagelink
+                ProfileBackgroundImagelink = user.ProfileBackgroundImagelink,
+                PostBookmarks = user?.PostBookmarks?.Select(item => item.UserPostId.ToString()).ToList()
             };
 
             return user is null ? NotFound() : Ok(response);
