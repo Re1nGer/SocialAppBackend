@@ -20,8 +20,7 @@ namespace SocialApp.Controllers.v1
             _context = context;
         }
 
-        [HttpGet]
-        [Route("{postId}")]
+        [HttpGet("{postId}")]
         public async Task<IActionResult> GetComments(Guid postId, CancellationToken token)
         {
 
@@ -34,8 +33,7 @@ namespace SocialApp.Controllers.v1
             return Ok(comments);
         }
 
-        [HttpPost]
-        [Route("")]
+        [HttpPost("")]
         public async Task<IActionResult> PostComment([FromBody] PostCommentRequest comment, CancellationToken token)
         {
             if (comment.PostId == Guid.Empty || comment.Message == "")
@@ -71,8 +69,7 @@ namespace SocialApp.Controllers.v1
             return Ok();
         }
 
-        [HttpDelete]
-        [Route("{postId}/{commentId}")]
+        [HttpDelete("{postId}/{commentId}")]
         public async Task<IActionResult> DeleteComment(Guid postId, Guid commentId, CancellationToken token)
         {
             var userId = GetUserId();

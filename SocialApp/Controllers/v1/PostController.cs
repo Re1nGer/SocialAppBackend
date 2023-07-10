@@ -28,7 +28,7 @@ namespace SocialApp.Controllers.v1
         public async Task<IActionResult> AddPost([FromForm] CreatePostRequest request, CancellationToken cancellationToken)
         {
 
-            if (!IsImage(request.Image))
+            if (request.Image is not null && !IsImage(request.Image))
             {
                 return BadRequest("Invalid file type. Only images are allowed.");
             }

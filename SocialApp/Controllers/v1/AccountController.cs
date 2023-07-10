@@ -68,7 +68,7 @@ namespace SocialApp.Controllers.v1
 
                 if (user is null)
                 {
-                    var newUser = new Domain.Entities.User
+                    var newUser = new User
                     {
                         Email = authLink.User.Email,
                         Username = authLink.User.DisplayName,
