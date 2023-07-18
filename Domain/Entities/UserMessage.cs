@@ -3,9 +3,9 @@
     public class UserMessage
     {
         public int Id { get; set; }
-        public Guid SourceId { get; set; }   
+        public Guid SourceUserId { get; set; }   
         public User SourceUser { get; set; }    
-        public Guid TargetId { get; set; }   
+        public Guid TargetUserId { get; set; }   
         public User TargetUser { get; set; }    
         public Guid UserChatId { get; set; }
         public UserChat UserChat { get; set; }

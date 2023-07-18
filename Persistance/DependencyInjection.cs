@@ -12,6 +12,19 @@ namespace Persistance
             {
                 options.UseNpgsql(configuration.GetConnectionString("ApplicationContext"));
                 options.EnableSensitiveDataLogging(true).EnableDetailedErrors(true);
+                using ServiceProvider serviceProvider = services.BuildServiceProvider();
+                try
+                {
+                    var backendContext = serviceProvider.GetRequiredService<ApplicationDbContext>();
+                    if (backendContext.Database.GetPendingMigrations().Any())
+                    {
+                        backendContext.Database.Migrate();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Service Provider error: {ex}");
+                };
             });
 
             return services;

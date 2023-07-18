@@ -10,11 +10,11 @@ namespace Persistance.Configurations
         {
             builder.HasOne(x => x.TargetUser)
                 .WithMany(x => x.UserMessageTargets)
-                .HasForeignKey(x => x.TargetId);
+                .HasForeignKey(x => x.TargetUserId);
 
             builder.HasOne(x => x.SourceUser)
                 .WithMany(x => x.UserMessageSources)
-                .HasForeignKey(x => x.SourceId);
+                .HasForeignKey(x => x.SourceUserId);
 
             builder.HasOne(x => x.UserChat)
                 .WithMany(x => x.Messages);
