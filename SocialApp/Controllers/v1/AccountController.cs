@@ -23,7 +23,7 @@ namespace SocialApp.Controllers.v1
         }
 
         [HttpPost("signin")]
-        public async Task<IActionResult> SignIn([FromBody] SignUpRequest request)
+        public async Task<IActionResult> SignIn([FromBody] SignUpRequest request, CancellationToken token)
         {
             FirebaseAuthProvider provider = new FirebaseAuthProvider(new FirebaseConfig(ApiKey));
 
@@ -34,7 +34,23 @@ namespace SocialApp.Controllers.v1
                 //authLink.
                 //var user = await provider.GetUserAsync(authLink);
 
-                var user = await _context.Users.FirstOrDefaultAsync(item => item.Email == authLink.User.Email);
+                var user = await _context.Users.FirstOrDefaultAsync(item => item.Email == authLink.User.Email, token);
+                
+                if (user is null)
+                {
+                    var newUser = new User
+                    {
+                        Email = authLink.User.Email,
+                        Username = request.Email,
+                        RegisteredAt = DateTime.UtcNow,
+                    };
+
+                    await _context.Users.AddAsync(newUser, token);
+
+                    await _context.SaveChangesAsync(token);
+
+                    user = newUser;
+                }
 
                 var claims = new List<Claim>() {  new Claim("UserId", user.Id.ToString()) }.ToArray();
 
