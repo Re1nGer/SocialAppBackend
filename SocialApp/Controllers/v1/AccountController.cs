@@ -5,6 +5,9 @@ using System.Security.Claims;
 using Firebase.Auth;
 using Microsoft.EntityFrameworkCore;
 using SocialApp.Models;
+using StreamChat.Clients;
+using StreamChat.Models;
+using FirebaseConfig = Firebase.Auth.FirebaseConfig;
 using User = Domain.Entities.User;
 
 namespace SocialApp.Controllers.v1
@@ -16,51 +19,41 @@ namespace SocialApp.Controllers.v1
         const string ApiKey = "AIzaSyAXgEXuez0ev-u2yOyK9oWFWv_6HJPnAwI";
 
         private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public AccountController(ApplicationDbContext context)
+        public AccountController(ApplicationDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         [HttpPost("signin")]
         public async Task<IActionResult> SignIn([FromBody] SignUpRequest request, CancellationToken token)
         {
             FirebaseAuthProvider provider = new FirebaseAuthProvider(new FirebaseConfig(ApiKey));
+            StreamClientFactory factory = new (_configuration.GetSection("StreamPubKey").Value, _configuration.GetSection("StreamPrivKey").Value);
+            var userClient = factory.GetUserClient();
 
             try
             {
-
                 var authLink = await provider.SignInWithEmailAndPasswordAsync(request.Email, request.Password);
-                //authLink.
-                //var user = await provider.GetUserAsync(authLink);
 
-                var user = await _context.Users.FirstOrDefaultAsync(item => item.Email == authLink.User.Email, token);
+                var user = await _context.Users.FirstOrDefaultAsync(item => item.Email == request.Email, token);
                 
                 if (user is null)
-                {
-                    var newUser = new User
-                    {
-                        Email = authLink.User.Email,
-                        Username = request.Email,
-                        RegisteredAt = DateTime.UtcNow,
-                    };
-
-                    await _context.Users.AddAsync(newUser, token);
-
-                    await _context.SaveChangesAsync(token);
-
-                    user = newUser;
-                }
+                    return BadRequest("No such user exists");
 
                 var claims = new List<Claim>() {  new Claim("UserId", user.Id.ToString()) }.ToArray();
 
                 var accessToken = JwtService.GenerateJwtToken(30, claims);
 
                 var refreshToken = JwtService.GenerateJwtToken(60, claims);
+
+                var streamToken = userClient.CreateToken(user.Id.ToString(), DateTimeOffset.UtcNow.AddHours(1));
                 
                 SetTokenCookie(refreshToken);
 
-                return Ok(new { token = accessToken });
+                return Ok(new { token = accessToken, streamToken });
 
             } catch (FirebaseAuthException ex)
             {
@@ -117,6 +110,8 @@ namespace SocialApp.Controllers.v1
         public async Task<IActionResult> SignUp([FromBody] SignUpRequest request, CancellationToken token)
         {
             FirebaseAuthProvider provider = new FirebaseAuthProvider(new FirebaseConfig(ApiKey));
+            StreamClientFactory factory = new (_configuration.GetSection("StreamPubKey").Value, _configuration.GetSection("StreamPrivKey").Value);
+            var userClient = factory.GetUserClient();
             
             try
             {
@@ -128,20 +123,31 @@ namespace SocialApp.Controllers.v1
                     Username = request.Email,
                     RegisteredAt = DateTime.UtcNow,
                 };
-
+                
                 await _context.Users.AddAsync(user, token);
 
                 await _context.SaveChangesAsync(token);
+                
+                var streamUser = new UserRequest
+                {
+                    Id = user.Id.ToString(),
+                    Role = Role.User,
+                    Name = user.Email
+                };
+                
+                await userClient.UpsertAsync(streamUser);
 
-                var claims = new List<Claim>() { new Claim("UserId", user.Id.ToString()) }.ToArray();
+                var claims = new List<Claim>() { new ("UserId", user.Id.ToString()) }.ToArray();
 
                 var accessToken = JwtService.GenerateJwtToken(30, claims);
 
                 var refreshToken = JwtService.GenerateJwtToken(60, Array.Empty<Claim>());
 
+                var streamToken = userClient.CreateToken(user.Id.ToString(), DateTimeOffset.UtcNow.AddHours(1));
+                
                 SetTokenCookie(refreshToken);
 
-                return Ok(new { token = accessToken });
+                return Ok(new { token = accessToken, streamToken });
 
             } catch (FirebaseAuthException ex)
             {
@@ -154,6 +160,9 @@ namespace SocialApp.Controllers.v1
         {
             try
             {
+                StreamClientFactory factory = new (_configuration.GetSection("StreamPubKey").Value, _configuration.GetSection("StreamPrivKey").Value);
+                
+                var userClient = factory.GetUserClient();
                 //TODO: Revoke prev refresh token
 
                 string bearerToken = HttpContext.Request.Cookies["RefreshToken"];
@@ -171,10 +180,12 @@ namespace SocialApp.Controllers.v1
                 var newAccessToken = JwtService.GenerateJwtToken(30, claims);
 
                 var newRefreshToken = JwtService.GenerateJwtToken(60, claims);
+                
+                var streamToken = userClient.CreateToken(userId, DateTimeOffset.UtcNow.AddHours(1));
 
                 SetTokenCookie(newRefreshToken);
 
-                return Ok(new { token = newAccessToken });
+                return Ok(new { token = newAccessToken, streamToken });
 
             } catch (FirebaseAuthException ex)
             {

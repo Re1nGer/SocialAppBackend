@@ -27,7 +27,7 @@ namespace SocialApp.Controllers.v1
         public async Task<IActionResult> GetUserList([FromQuery] string? q, CancellationToken token)
         {
             return Ok(await _context.Users
-                .Where(item => item.Username.Contains(q) || q.Contains(item.Username))
+                .Where(item => item.Username.Contains(q) || q.Contains(item.Username) || item.Email.Contains(q))
                 .ToListAsync(token));
         }
 

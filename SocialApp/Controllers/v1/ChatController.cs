@@ -1,8 +1,12 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Domain.Entities;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Persistance;
+using StreamChat.Clients;
+using StreamChat.Models;
+using UserRequest = StreamChat.Models.UserRequest;
 
 namespace SocialApp.Controllers.v1
 {
@@ -12,44 +16,87 @@ namespace SocialApp.Controllers.v1
     public class ChatController : BaseController
     {
         private readonly ApplicationDbContext _context;
-
-        public ChatController(ApplicationDbContext context)
+        private readonly IConfiguration _configuration;
+        public ChatController(ApplicationDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
-        [HttpGet("")]
-        public async Task<IActionResult> GetChats(CancellationToken cancellationToken)
+        [HttpGet("list")]
+        public async Task<IActionResult> GetChat(CancellationToken cancellationToken)
         {
             var userId = GetUserId();
 
-            // Add the new UserComment object to the UserComments table
-            var chats  = await _context.UserChats
+            var chats = await _context.UserChats
                 .Where(item => item.UserId == userId)
                 .ToListAsync(cancellationToken);
-
-            // Return a response indicating success
+            
             return Ok(chats);
         }
-
-        /*
-        [HttpPost]
-        public async Task<IActionResult> StartChat([FromBody] StartChatRequest request, CancellationToken cancellationToken)
+        
+        [HttpPost("")]
+        public async Task<IActionResult> PostChat([FromBody] PostChatRequest request, CancellationToken cancellationToken)
         {
             var userId = GetUserId();
+            
+            var user = await _context.Users
+                .FirstOrDefaultAsync(item => item.Id == userId, cancellationToken);
 
-            // Fow now we should store messages for both startUser and targetUser
-            var newChatStartUser = await _context.UserChats
-                .AddAsync(new UserChat { Messages = new List<UserMessage>(), UserId = userId }, cancellationToken);
+            var userChatWith = await _context.Users
+                .FirstOrDefaultAsync(item => item.Id == request.UserId, cancellationToken);
 
-            var chats  = await _context.UserChats
-                .Where(item => item.UserId == userId)
-                .ToListAsync(cancellationToken);
+            if (user is null || userChatWith is null)
+                return BadRequest("No Such User Exists");
 
-            // Return a response indicating success
-            return Ok(chats);
+            var chatExists = await _context.UserChats.AnyAsync(item =>
+                item.UserId == user.Id && item.UserWithChatId == userChatWith.Id, cancellationToken);
+
+            if (chatExists)
+            {
+                return BadRequest("Such Chat Already Exists");
+            }
+            
+            StreamClientFactory factory = new (_configuration.GetSection("StreamPubKey").Value, _configuration.GetSection("StreamPrivKey").Value);
+            
+            var channelClient = factory.GetChannelClient();
+            
+            var chanData = new ChannelRequest { CreatedBy = new UserRequest { Id = user.Id.ToString(), Name = user.Username + " & " + userChatWith.Username},
+                Members = new List<ChannelMember>{ new () { UserId = user.Id.ToString() }, new () { UserId = userChatWith.Id.ToString() } },
+            };
+
+            var channelId = Guid.NewGuid().ToString();
+            
+            await channelClient.GetOrCreateAsync("messaging", channelId, new ChannelGetRequest
+            {
+                Data = chanData,
+            });
+
+            var userChat = new UserChat
+            {
+                UserId = userId,
+                UserWithChatId = userChatWith.Id,
+                ChannelId = channelId
+            };
+
+            var otherUserChat = new UserChat
+            {
+                UserId = userChatWith.Id,
+                UserWithChatId = userId
+            };
+
+            await _context.UserChats.AddAsync(otherUserChat, cancellationToken);
+
+            await _context.UserChats.AddAsync(userChat, cancellationToken);
+
+            await _context.SaveChangesAsync(cancellationToken);
+            
+            return Ok();
         }
-        */
     }
 
+    public class PostChatRequest
+    {
+        public Guid UserId { get; set; }
+    }
 }

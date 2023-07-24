@@ -8,10 +8,6 @@ namespace Persistance
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
         public virtual DbSet<User> Users { get; set; }
-        
-        public virtual DbSet<UserFollower> UserFollowers { get; set; }
-        
-        public virtual DbSet<UserMessage> UserMessages { get; set; }
         public virtual DbSet<UserPost> UserPosts { get; set; }
         public virtual DbSet<UserChat> UserChats { get; set; }
         public virtual DbSet<Comment> UserComments { get; set; }

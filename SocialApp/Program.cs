@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using Persistance;
-using SocialApp.Services;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -26,7 +25,6 @@ builder.Services.AddCors(opts =>
                             .AllowAnyMethod()
                             .AllowAnyHeader()
                             .AllowCredentials();
-                    //.AllowCredentials();
                 });
             });
 
@@ -43,7 +41,6 @@ builder.Services.AddAuthentication(options =>
             options.TokenValidationParameters = new TokenValidationParameters()
             {
                 ValidateIssuer = false,
-                //ValidIssuer = TokenConfig.TokenIssuer,
                 ValidateAudience = false,
                 ValidateIssuerSigningKey = true,
                 ValidateLifetime = false,
