@@ -13,6 +13,7 @@ public class UserResponse
     public List<UserRequest>? UserRequests { get; set; }
     public List<UserPostResponse>? UserPosts { get; set; }
     public bool IsFollowing { get; set; }
+    public string Intro { get; set; }
 }
 
 public class UserPostResponse

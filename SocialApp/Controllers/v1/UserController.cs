@@ -68,7 +68,8 @@ namespace SocialApp.Controllers.v1
                 HighResImageLink = user.HighResImageLink,
                 LowResImageLink = user.LowResImageLink,
                 ProfileBackgroundImagelink = user.ProfileBackgroundImagelink,
-                PostBookmarks = user?.PostBookmarks?.Select(item => item.UserPostId.ToString()).ToList()
+                PostBookmarks = user?.PostBookmarks?.Select(item => item.UserPostId.ToString()).ToList(),
+                Intro = user.Intro
             };
 
             return user is null ? NotFound() : Ok(response);
@@ -135,7 +136,7 @@ namespace SocialApp.Controllers.v1
             
             return Ok(requests);
         }
-
+        
         [HttpPut("image")]
         public async Task<IActionResult> UpdateUserProfilePicture([FromForm] UpdateProfilePictureRequest request, CancellationToken token)
         {
@@ -159,6 +160,25 @@ namespace SocialApp.Controllers.v1
 
             return Ok(new { highResImageLink, lowResImageLink });
         }
+        
+        [HttpPut("")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserRequest request, CancellationToken token)
+        {
+            var userId = GetUserId();
+            
+            var user = await _context.Users.
+                FirstOrDefaultAsync(item => item.Id == userId, token);
+
+            user.Username = request.Username;
+            
+            user.Intro = request.Intro;
+
+            _context.Users.Update(user);
+
+            await _context.SaveChangesAsync(token);
+
+            return Ok(new { Username = user.Username, Intro = user.Intro });
+        }
 
         [HttpPost("backgroundimage")]
         public async Task<IActionResult> UpdateUserBackgroundProfilePicture([FromForm] UpdateProfilePictureRequest request, CancellationToken token)
@@ -177,7 +197,6 @@ namespace SocialApp.Controllers.v1
 
             return Ok(new { backgroundImageLink });
         }
-
         private async Task<string> ProcessAndUploadImage(IFormFile formFile)
         {
             using (Image image = Image.Load(formFile.OpenReadStream()))
@@ -238,5 +257,11 @@ namespace SocialApp.Controllers.v1
 
             return uploadResult.SecureUrl.ToString();
         }
+    }
+
+    public class UpdateUserRequest
+    {
+        public string Username { get; set; }
+        public string Intro { get; set; }
     }
 }
