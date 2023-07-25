@@ -60,51 +60,6 @@ namespace SocialApp.Controllers.v1
                 return BadRequest(ex.ResponseData);
             }
         }
-        
-        [HttpPost("signinwithgoogle")]
-        public async Task<IActionResult> SignInWithGoogle([FromBody] SignInGoogleRequest request, CancellationToken token)
-        {
-            FirebaseAuthProvider provider = new FirebaseAuthProvider(new FirebaseConfig(ApiKey));
-
-            try
-            {
-                var authLink = await provider.SignInWithGoogleIdTokenAsync(request.GoogleIdToken);
-                
-                //authLink.
-                //var user = await provider.GetUserAsync(authLink);
-
-                var user = await _context.Users.FirstOrDefaultAsync(item => item.Email == authLink.User.Email, token);
-
-                if (user is null)
-                {
-                    var newUser = new User
-                    {
-                        Email = authLink.User.Email,
-                        Username = authLink.User.DisplayName,
-                        RegisteredAt = DateTime.UtcNow,
-                    };
-
-                    await _context.Users.AddAsync(newUser, token);
-
-                    await _context.SaveChangesAsync(token);
-                }
-                
-
-                var claims = new List<Claim>() {  new Claim("UserId", user.Id.ToString()) }.ToArray();
-
-                var accessToken = JwtService.GenerateJwtToken(30, claims);
-
-                var refreshToken = JwtService.GenerateJwtToken(60, claims);
-                
-                SetTokenCookie(refreshToken);
-
-                return Ok(new { token = accessToken });
-
-            } catch (FirebaseAuthException ex)
-            {
-                return BadRequest(ex.ResponseData);
-            }
-        }
 
         [HttpPost("signup")]
         public async Task<IActionResult> SignUp([FromBody] SignUpRequest request, CancellationToken token)

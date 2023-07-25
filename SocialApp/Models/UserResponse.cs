@@ -12,6 +12,7 @@ public class UserResponse
     public List<string>? PostBookmarks { get; set; }
     public List<UserRequest>? UserRequests { get; set; }
     public List<UserPostResponse>? UserPosts { get; set; }
+    public bool IsFollowing { get; set; }
 }
 
 public class UserPostResponse

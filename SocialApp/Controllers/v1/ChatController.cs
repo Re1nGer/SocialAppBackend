@@ -56,42 +56,59 @@ namespace SocialApp.Controllers.v1
             {
                 return BadRequest("Such Chat Already Exists");
             }
-            
-            StreamClientFactory factory = new (_configuration.GetSection("StreamPubKey").Value, _configuration.GetSection("StreamPrivKey").Value);
-            
+            StreamClientFactory factory = new(_configuration.GetSection("StreamPubKey").Value,
+                _configuration.GetSection("StreamPrivKey").Value);
+
             var channelClient = factory.GetChannelClient();
-            
-            var chanData = new ChannelRequest { CreatedBy = new UserRequest { Id = user.Id.ToString(), Name = user.Username + " & " + userChatWith.Username},
-                Members = new List<ChannelMember>{ new () { UserId = user.Id.ToString() }, new () { UserId = userChatWith.Id.ToString() } },
-            };
 
             var channelId = Guid.NewGuid().ToString();
             
-            await channelClient.GetOrCreateAsync("messaging", channelId, new ChannelGetRequest
+            try
             {
-                Data = chanData,
-            });
 
-            var userChat = new UserChat
+                var chanData = new ChannelRequest
+                {
+                    CreatedBy = new UserRequest
+                        { Id = user.Id.ToString(), Name = user.Username + " & " + userChatWith.Username },
+                    Members = new List<ChannelMember>
+                        { new() { UserId = user.Id.ToString() }, new() { UserId = userChatWith.Id.ToString() } },
+                };
+
+
+                await channelClient.GetOrCreateAsync("messaging", channelId, new ChannelGetRequest
+                {
+                    Data = chanData,
+                });
+
+                var userChat = new UserChat
+                {
+                    UserId = userId,
+                    UserWithChatId = userChatWith.Id,
+                    ChannelId = channelId,
+                    Name = $"Conversation with {userChatWith.Username}"
+                };
+
+                var otherUserChat = new UserChat
+                {
+                    UserId = userChatWith.Id,
+                    UserWithChatId = userId,
+                    ChannelId = channelId,
+                    Name = $"Conversation with {user.Username}"
+                };
+
+                await _context.UserChats.AddAsync(otherUserChat, cancellationToken);
+
+                await _context.UserChats.AddAsync(userChat, cancellationToken);
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return Ok();
+            }
+            catch (Exception ex)
             {
-                UserId = userId,
-                UserWithChatId = userChatWith.Id,
-                ChannelId = channelId
-            };
-
-            var otherUserChat = new UserChat
-            {
-                UserId = userChatWith.Id,
-                UserWithChatId = userId
-            };
-
-            await _context.UserChats.AddAsync(otherUserChat, cancellationToken);
-
-            await _context.UserChats.AddAsync(userChat, cancellationToken);
-
-            await _context.SaveChangesAsync(cancellationToken);
-            
-            return Ok();
+                await channelClient.DeleteAsync("messaging", channelId);
+                return BadRequest(ex.Data.ToString());
+            }
         }
     }
 

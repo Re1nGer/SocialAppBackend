@@ -77,6 +77,9 @@ namespace SocialApp.Controllers.v1
         [HttpGet("{userId}")]
         public async Task<IActionResult> GetUserById(Guid userId, CancellationToken token)
         {
+
+            var currentUserId = GetUserId();
+            
             var user = await _context.Users
                 .Include(item => item.UserPosts)
                 .AsSplitQuery()
@@ -95,6 +98,11 @@ namespace SocialApp.Controllers.v1
             var requests = await _context.UserRequests
                 .Where(item => item.UserReceivingRequestId == userId && item.Status == "Pending")
                 .ToListAsync(token);
+
+            var isFollowing = await _context.UserRequests
+                .AnyAsync(item =>
+                    item.SenderUserId == currentUserId && item.UserReceivingRequestId == userId &&
+                    item.Status == "Accepted", token);
             
             var response = new UserResponse()
             {
@@ -111,7 +119,8 @@ namespace SocialApp.Controllers.v1
                 UserRequests = requests,
                 HighResImageLink = user.HighResImageLink,
                 LowResImageLink = user.LowResImageLink,
-                ProfileBackgroundImagelink = user.ProfileBackgroundImagelink
+                ProfileBackgroundImagelink = user.ProfileBackgroundImagelink,
+                IsFollowing = isFollowing
             };
             
             return Ok(response);
@@ -134,21 +143,21 @@ namespace SocialApp.Controllers.v1
 
             var user = await _context.Users.FirstOrDefaultAsync(item => item.Id == userId, token);
 
-            var lowResImage = await ProcessAndUploadImage(request.Image);
+            var lowResImageLink = await ProcessAndUploadImage(request.Image);
 
-            var highResImage = await UploadImageToCloudinary(request.Image.Name, request.Image);
+            var highResImageLink = await UploadImageToCloudinary(request.Image.Name, request.Image);
 
             //probably extract out into dependency
 
-            user.HighResImageLink = highResImage;
+            user.HighResImageLink = highResImageLink;
 
-            user.LowResImageLink = lowResImage;
+            user.LowResImageLink = lowResImageLink;
 
             _context.Users.Update(user);
                 
             await _context.SaveChangesAsync(token);
 
-            return Ok();
+            return Ok(new { highResImageLink, lowResImageLink });
         }
 
         [HttpPost("backgroundimage")]

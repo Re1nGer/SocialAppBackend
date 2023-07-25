@@ -6,6 +6,7 @@
         public Guid UserId { get; set; } 
         public Guid UserWithChatId { get; set; }
         public string ChannelId { get; set; }
+        public string Name { get; set; }
         public virtual User User { get; set; }
     }
 }
