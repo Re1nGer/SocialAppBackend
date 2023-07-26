@@ -16,8 +16,6 @@ namespace SocialApp.Controllers.v1
     [ApiController]
     public class AccountController : ControllerBase
     {
-        const string ApiKey = "AIzaSyAXgEXuez0ev-u2yOyK9oWFWv_6HJPnAwI";
-
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
 
@@ -30,7 +28,7 @@ namespace SocialApp.Controllers.v1
         [HttpPost("signin")]
         public async Task<IActionResult> SignIn([FromBody] SignUpRequest request, CancellationToken token)
         {
-            FirebaseAuthProvider provider = new FirebaseAuthProvider(new FirebaseConfig(ApiKey));
+            FirebaseAuthProvider provider = new FirebaseAuthProvider(new FirebaseConfig(_configuration.GetSection("FirebaseApiKey").Value));
             StreamClientFactory factory = new (_configuration.GetSection("StreamPubKey").Value, _configuration.GetSection("StreamPrivKey").Value);
             var userClient = factory.GetUserClient();
 
@@ -64,7 +62,7 @@ namespace SocialApp.Controllers.v1
         [HttpPost("signup")]
         public async Task<IActionResult> SignUp([FromBody] SignUpRequest request, CancellationToken token)
         {
-            FirebaseAuthProvider provider = new FirebaseAuthProvider(new FirebaseConfig(ApiKey));
+            FirebaseAuthProvider provider = new FirebaseAuthProvider(new FirebaseConfig(_configuration.GetSection("FirebaseApiKey").Value));
             StreamClientFactory factory = new (_configuration.GetSection("StreamPubKey").Value, _configuration.GetSection("StreamPrivKey").Value);
             var userClient = factory.GetUserClient();
             

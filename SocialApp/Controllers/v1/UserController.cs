@@ -27,8 +27,10 @@ namespace SocialApp.Controllers.v1
         public async Task<IActionResult> GetUserList([FromQuery] string? q, CancellationToken token)
         {
             return Ok(await _context.Users
-                .Where(item => item.Username.Contains(q) || q.Contains(item.Username) || item.Email.Contains(q))
-                .ToListAsync(token));
+                    .Where(item => item.Username.ToLower().Contains(q.ToLower())
+                                   || q.Contains(item.Username.ToLower().ToLower())
+                                   || item.Email.ToLower().Contains(q.ToLower()))
+                                        .ToListAsync(token));
         }
 
         [HttpGet("")]
@@ -52,7 +54,7 @@ namespace SocialApp.Controllers.v1
                 .Where(item => item.UserReceivingRequestId == userId && item.Status == "Pending")
                 .ToListAsync(token);
             
-            var response = new UserResponse()
+            var response = new UserResponse
             {
                 Id = userId,
                 Username = user.Username,
