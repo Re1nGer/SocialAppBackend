@@ -17,10 +17,12 @@ namespace SocialApp.Controllers.v1
     public class PostController : BaseController
     {
         private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public PostController(ApplicationDbContext context)
+        public PostController(ApplicationDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         [HttpPost("")]
@@ -266,7 +268,10 @@ namespace SocialApp.Controllers.v1
                 File = new FileDescription(imageName, new MemoryStream(imageBytes))
             };
 
-            var cloudinary = new Cloudinary(new Account("dcjubzmeu", "248951749718234", "9SNdW4kehk_tR6jY4rkDexcz928"));
+            var cloudinary = new Cloudinary(
+                new Account(_configuration.GetSection("CloudinaryCloud").Value,
+                    _configuration.GetSection("CloudinaryApiKey").Value,
+                    _configuration.GetSection("CloudinaryApiSecret").Value));
 
             ImageUploadResult uploadResult = await cloudinary.UploadAsync(uploadParams);
 
@@ -281,7 +286,10 @@ namespace SocialApp.Controllers.v1
                 File = new FileDescription(imageName, stream)
             };
 
-            var cloudinary = new Cloudinary(new Account("dcjubzmeu", "248951749718234", "9SNdW4kehk_tR6jY4rkDexcz928"));
+            var cloudinary = new Cloudinary(
+                new Account(_configuration.GetSection("CloudinaryCloud").Value,
+                    _configuration.GetSection("CloudinaryApiKey").Value,
+                    _configuration.GetSection("CloudinaryApiSecret").Value));
 
             ImageUploadResult uploadResult = await cloudinary.UploadAsync(uploadParams);
 
