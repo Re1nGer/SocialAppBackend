@@ -7,6 +7,8 @@ using CloudinaryDotNet.Actions;
 using Persistance;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using OpenAI_API;
+using OpenAI_API.Images;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SocialApp.Models;
 
@@ -23,6 +25,19 @@ namespace SocialApp.Controllers.v1
         {
             _context = context;
             _configuration = configuration;
+        }
+        
+        [HttpGet("image/{caption}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> GenerateImageFromCaption(string caption, CancellationToken cancellationToken)
+        {
+            if (caption == "") return BadRequest("Caption cannot be empty");
+            
+            OpenAIAPI api = new OpenAIAPI(_configuration.GetSection("DaleApiKey").Value);
+
+            var image = await api.ImageGenerations.CreateImageAsync(new ImageGenerationRequest(caption, 1, ImageSize._512));
+            
+            return Ok(new { Url = image.Data[0].Url });
         }
 
         [HttpPost("")]
@@ -61,6 +76,28 @@ namespace SocialApp.Controllers.v1
                     postModel.LowResMediaUrl = lowresImageUrl;
 
                     postModel.MediaUrl = highResImageUrl;
+                }
+
+                if (request.ImageSrc is not null)
+                {
+                    using (var httpClient = new HttpClient())
+                    {
+                        //Issue the GET request to a URL and read the response into a 
+                        //stream that can be used to load the image
+                        var imageContent = await httpClient.GetByteArrayAsync(request.ImageSrc, cancellationToken);
+    
+                        using (var imageBuffer = new MemoryStream(imageContent))
+                        {
+                            var image = await Image.LoadAsync(imageBuffer, cancellationToken);
+                            
+                            byte[] imageBytes = ConvertImageToBytes(image);
+
+                            var link = await UploadImageToCloudinary(Guid.NewGuid().ToString(), imageBytes);
+
+                            postModel.LowResMediaUrl = link;
+                            postModel.MediaUrl = link;
+                        }
+                    }
                 }
 
                 await _context.SaveChangesAsync(cancellationToken);
@@ -224,7 +261,6 @@ namespace SocialApp.Controllers.v1
             
             return Ok();
         }
-        
         private bool IsImage(IFormFile file)
         {
             return file.ContentType.StartsWith("image/");
@@ -265,7 +301,7 @@ namespace SocialApp.Controllers.v1
         {
             var uploadParams = new ImageUploadParams
             {
-                File = new FileDescription(imageName, new MemoryStream(imageBytes))
+                File = new FileDescription(imageName, new MemoryStream(imageBytes)),
             };
 
             var cloudinary = new Cloudinary(
@@ -274,6 +310,8 @@ namespace SocialApp.Controllers.v1
                     _configuration.GetSection("CloudinaryApiSecret").Value));
 
             ImageUploadResult uploadResult = await cloudinary.UploadAsync(uploadParams);
+            
+            
 
             return uploadResult.SecureUrl.ToString();
         }
