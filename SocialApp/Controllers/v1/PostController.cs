@@ -261,6 +261,30 @@ namespace SocialApp.Controllers.v1
             
             return Ok();
         }
+        
+        [HttpPost("image")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> UploadImageToCloudinary([FromForm] UploadImageToCloudinaryRequest request, CancellationToken token)
+        {
+            var url = await UploadImageToCloudinary(request.Image.Name, request.Image);
+            
+            return Ok(new { Url = url });
+        }
+        
+        [HttpPut("image")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> DeleteImageFromCloudinary(DeleteImageFromCloudinaryRequest request)
+        {
+            var result = await DeleteImageFromCloudinary(request.Url);
+
+            if (result.Error.Message != "")
+            {
+                return BadRequest("Couldn't Delete The Resource");
+            }
+
+            return Ok();
+        }
+        
         private bool IsImage(IFormFile file)
         {
             return file.ContentType.StartsWith("image/");
@@ -308,12 +332,23 @@ namespace SocialApp.Controllers.v1
                 new Account(_configuration.GetSection("CloudinaryCloud").Value,
                     _configuration.GetSection("CloudinaryApiKey").Value,
                     _configuration.GetSection("CloudinaryApiSecret").Value));
+            
 
             ImageUploadResult uploadResult = await cloudinary.UploadAsync(uploadParams);
             
             
 
             return uploadResult.SecureUrl.ToString();
+        }
+
+        private async Task<DelResResult> DeleteImageFromCloudinary(string url)
+        {
+            var cloudinary = new Cloudinary(
+                new Account(_configuration.GetSection("CloudinaryCloud").Value,
+                    _configuration.GetSection("CloudinaryApiKey").Value,
+                    _configuration.GetSection("CloudinaryApiSecret").Value));
+
+            return await cloudinary.DeleteResourcesAsync(ResourceType.Image, new [] { url });
         }
         private async Task<string> UploadImageToCloudinary(string imageName, IFormFile image)
         {
@@ -333,5 +368,15 @@ namespace SocialApp.Controllers.v1
 
             return uploadResult.SecureUrl.ToString();
         }
+    }
+
+    public class DeleteImageFromCloudinaryRequest
+    {
+        public string Url { get; set; }
+    }
+
+    public class UploadImageToCloudinaryRequest
+    {
+        public IFormFile Image { get; set; }
     }
 }
