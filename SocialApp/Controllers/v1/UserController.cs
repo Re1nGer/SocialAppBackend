@@ -123,7 +123,8 @@ namespace SocialApp.Controllers.v1
                 HighResImageLink = user.HighResImageLink,
                 LowResImageLink = user.LowResImageLink,
                 ProfileBackgroundImagelink = user.ProfileBackgroundImagelink,
-                IsFollowing = isFollowing
+                IsFollowing = isFollowing,
+                Intro = user.Intro
             };
             
             return Ok(response);

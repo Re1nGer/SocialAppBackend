@@ -193,7 +193,8 @@ namespace SocialApp.Controllers.v1
                 CommentCount = commentCount,
                 UserImageLink = user.LowResImageLink,
                 Username = user.Username,
-                HasUserSaved = hasUserSaved
+                HasUserSaved = hasUserSaved,
+                DateCreated = userPost.CreatedAt
             };
             
             return Ok(model);

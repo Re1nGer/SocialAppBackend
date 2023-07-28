@@ -12,4 +12,6 @@ public class PostModel
     public bool HasUserSaved { get; set; }
     public int LikeCount { get; set; }
     public int CommentCount { get; set; }
+    public DateTime DateCreated { get; set; }
+    public string Location { get; set; }
 }
