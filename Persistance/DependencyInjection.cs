@@ -17,11 +17,15 @@ namespace Persistance
             {
                 try
                 {
-                    var backendContext = serviceProvider.GetRequiredService<ApplicationDbContext>();
+                    //var backendContext = serviceProvider.GetRequiredService<ApplicationDbContext>();
+                    
+                    /*
                     if (backendContext.Database.GetPendingMigrations().Any())
                     {
                         backendContext.Database.Migrate();
                     };
+                    */
+                
                 }
                 catch (Exception ex)
                 {

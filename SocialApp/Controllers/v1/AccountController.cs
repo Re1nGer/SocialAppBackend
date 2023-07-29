@@ -14,7 +14,7 @@ namespace SocialApp.Controllers.v1
 {
     [Route("api/v1/[controller]")]
     [ApiController]
-    public class AccountController : ControllerBase
+    public class AccountController : BaseController
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
@@ -31,7 +31,9 @@ namespace SocialApp.Controllers.v1
         public async Task<IActionResult> SignIn([FromBody] SignUpRequest request, CancellationToken token)
         {
             FirebaseAuthProvider provider = new FirebaseAuthProvider(new FirebaseConfig(_configuration.GetSection("FirebaseApiKey").Value));
+            
             StreamClientFactory factory = new (_configuration.GetSection("StreamPubKey").Value, _configuration.GetSection("StreamPrivKey").Value);
+            
             var userClient = factory.GetUserClient();
 
             try
@@ -179,18 +181,6 @@ namespace SocialApp.Controllers.v1
             {
                 return BadRequest(ex.ResponseData);
             }
-        }
-        private void SetTokenCookie(string token)
-        {
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Expires = DateTime.UtcNow.AddHours(1),
-                SameSite = SameSiteMode.None,
-                Secure = true,
-                IsEssential = true,
-            };
-            Response.Cookies.Append("RefreshToken", token, cookieOptions);
         }
     }
 

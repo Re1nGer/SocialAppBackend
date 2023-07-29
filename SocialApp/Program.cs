@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using MongoDB.Driver;
 using Persistance;
 using System.Text;
 using System.Text.Json.Serialization;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using SocialApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +20,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Services.AddTransient<MailService>();
 
+
 builder.Services.AddCors(opts =>
             {
                 opts.AddPolicy("AllowAll", builder =>
@@ -29,6 +31,13 @@ builder.Services.AddCors(opts =>
                             .AllowCredentials();
                 });
             });
+
+var defaultInstance = FirebaseApp.Create(new AppOptions()
+{
+    Credential = GoogleCredential.GetApplicationDefault()
+});
+
+builder.Services.AddSingleton(defaultInstance);
 
 builder.Services.AddAuthentication(options =>
     {
