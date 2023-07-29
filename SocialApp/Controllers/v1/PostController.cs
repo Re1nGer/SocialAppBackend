@@ -50,6 +50,11 @@ namespace SocialApp.Controllers.v1
                 return BadRequest("Invalid file type. Only images are allowed.");
             }
 
+            if (request.Image is null && request.ImageSrc is null)
+            {
+                return BadRequest("Image cannot be empty");
+            }
+
             var sanitizer = new HtmlSanitizer();
 
             var sanitizedHtmlInput = sanitizer.Sanitize(request.HtmlContent);

@@ -38,7 +38,6 @@
     <Content Include="..\.dockerignore">
       <Link>.dockerignore</Link>
     </Content>
-    <Content Remove="firebase-config.json" />
   </ItemGroup>
 
 </Project>

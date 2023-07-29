@@ -34,7 +34,7 @@ builder.Services.AddCors(opts =>
 
 var defaultInstance = FirebaseApp.Create(new AppOptions()
 {
-    Credential = GoogleCredential.GetApplicationDefault()
+    Credential = GoogleCredential.FromFile("./firebase-config.json")
 });
 
 builder.Services.AddSingleton(defaultInstance);
