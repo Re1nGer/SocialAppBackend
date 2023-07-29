@@ -18,11 +18,13 @@ namespace SocialApp.Controllers.v1
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly MailService _mailService;
 
-        public AccountController(ApplicationDbContext context, IConfiguration configuration)
+        public AccountController(ApplicationDbContext context, IConfiguration configuration, MailService mailService)
         {
             _context = context;
             _configuration = configuration;
+            _mailService = mailService;
         }
 
         [HttpPost("signin")]
@@ -68,7 +70,7 @@ namespace SocialApp.Controllers.v1
             
             try
             {
-                await provider.CreateUserWithEmailAndPasswordAsync(request.Email, request.Password);
+                var authlink = await provider.CreateUserWithEmailAndPasswordAsync(request.Email, request.Password);
 
                 var user = new User
                 {
@@ -97,10 +99,12 @@ namespace SocialApp.Controllers.v1
                 var refreshToken = JwtService.GenerateJwtToken(60, Array.Empty<Claim>());
 
                 var streamToken = userClient.CreateToken(user.Id.ToString(), DateTimeOffset.UtcNow.AddHours(1));
+
+                var firebaseToken = authlink.FirebaseToken;
                 
                 SetTokenCookie(refreshToken);
 
-                return Ok(new { token = accessToken, streamToken });
+                return Ok(new { token = accessToken, streamToken, firebaseToken });
 
             } catch (FirebaseAuthException ex)
             {
@@ -144,6 +148,13 @@ namespace SocialApp.Controllers.v1
             {
                 return BadRequest(ex.ResponseData);
             }
+        }
+
+        [HttpGet("test")]
+        public async Task<IActionResult> TestEmail()
+        {
+            _mailService.SendEmail(new MailServiceRequest() { Body = "Some Body", To = "bekjonibr@gmail.com", Subject = "TestEmail"});
+            return Ok();
         }
 
         [HttpPost("revoke")]

@@ -4,6 +4,7 @@ using MongoDB.Driver;
 using Persistance;
 using System.Text;
 using System.Text.Json.Serialization;
+using SocialApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
+builder.Services.AddTransient<MailService>();
 
 builder.Services.AddCors(opts =>
             {
@@ -49,18 +51,12 @@ builder.Services.AddAuthentication(options =>
         });
 builder.Services.AddPersistance(builder.Configuration);
 
-string connectionString = builder.Configuration.GetConnectionString("MongoDb");
-
-builder.Services.AddSingleton<IMongoClient>(new MongoClient(connectionString));
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+
 app.UseRouting();
 app.UseCors("AllowAll");
 
