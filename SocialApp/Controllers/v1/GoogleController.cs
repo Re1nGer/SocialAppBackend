@@ -85,16 +85,16 @@ public class GoogleController : BaseController
 
         var pictureLink = test.Claims.FirstOrDefault(item => item.Key == "picture").Value as string;
         
-        StreamClientFactory factory = new (_configuration.GetSection("StreamPubKey").Value, _configuration.GetSection("StreamPrivKey").Value);
-        
-        var userClient = factory.GetUserClient();
-        
         var userExists = await _context.Users.AnyAsync(item => item.Email == userEmail);
 
         if (userExists)
         {
-            return BadRequest("User Already Exists");
+            return BadRequest(new { Error= new { Message = "User Already Exists"} });
         }
+        
+        StreamClientFactory factory = new (_configuration.GetSection("StreamPubKey").Value, _configuration.GetSection("StreamPrivKey").Value);
+        
+        var userClient = factory.GetUserClient();
         
         var user = new User
         {

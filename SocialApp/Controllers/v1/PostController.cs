@@ -1,4 +1,5 @@
-﻿using CloudinaryDotNet;
+﻿using Amazon.Runtime.Internal.Transform;
+using CloudinaryDotNet;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -53,6 +54,11 @@ namespace SocialApp.Controllers.v1
             if (request.Image is null && request.ImageSrc is null)
             {
                 return BadRequest("Image cannot be empty");
+            }
+
+            if (request.Image.Length > 10000000)
+            {
+                return BadRequest("Image Size is too huge");
             }
 
             var sanitizer = new HtmlSanitizer();
