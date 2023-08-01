@@ -46,17 +46,22 @@ namespace SocialApp.Controllers.v1
         public async Task<IActionResult> AddPost([FromForm] CreatePostRequest request, CancellationToken cancellationToken)
         {
 
+            /*
             if (request.Image is not null && !IsImage(request.Image))
             {
                 return BadRequest("Invalid file type. Only images are allowed.");
             }
+            */
 
+            /*
             if (request.Image is null && request.ImageSrc is null)
             {
                 return BadRequest("Image cannot be empty");
             }
+            */
 
-            if (request.Image.Length > 10000000)
+            
+            if (request?.Image?.Length > 10000000 || request?.Video?.Length > 10000000)
             {
                 return BadRequest("Image Size is too huge");
             }
@@ -89,6 +94,28 @@ namespace SocialApp.Controllers.v1
                     postModel.MediaUrl = highResImageUrl;
                 }
 
+                if (request.Video is not null)
+                {
+                    
+                    var cloudinary = new Cloudinary(
+                        new Account(_configuration.GetSection("CloudinaryCloud").Value,
+                            _configuration.GetSection("CloudinaryApiKey").Value,
+                            _configuration.GetSection("CloudinaryApiSecret").Value));
+                    
+                    var uploadParams = new VideoUploadParams()
+                    {
+                        File = new FileDescription(request.Video.FileName, request.Video.OpenReadStream()),        
+                        PublicId = Guid.NewGuid().ToString(),
+                        Overwrite = true
+                    };
+                    
+                    var uploadResult = await cloudinary.UploadAsync(uploadParams);
+
+                    postModel.MediaUrl = uploadResult.SecureUrl.AbsoluteUri;
+                    
+                    postModel.HasVideo = true;
+                }
+
                 if (request.ImageSrc is not null)
                 {
                     using (var httpClient = new HttpClient())
@@ -106,6 +133,7 @@ namespace SocialApp.Controllers.v1
                             var link = await UploadImageToCloudinary(Guid.NewGuid().ToString(), imageBytes);
 
                             postModel.LowResMediaUrl = link;
+                            
                             postModel.MediaUrl = link;
                         }
                     }
@@ -205,7 +233,8 @@ namespace SocialApp.Controllers.v1
                 UserImageLink = user.LowResImageLink,
                 Username = user.Username,
                 HasUserSaved = hasUserSaved,
-                DateCreated = userPost.CreatedAt
+                DateCreated = userPost.CreatedAt,
+                HasVideo = userPost.HasVideo
             };
             
             return Ok(model);

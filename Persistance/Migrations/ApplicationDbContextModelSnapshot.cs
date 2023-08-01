@@ -233,6 +233,9 @@ namespace Persistance.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("HasVideo")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("LowResMediaUrl")
                         .HasColumnType("text");
 

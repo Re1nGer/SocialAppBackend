@@ -117,14 +117,16 @@ namespace SocialApp.Controllers.v1
                     LowResMediaUrl = item.LowResMediaUrl,
                     Message = item.Message,
                     LikeCount = item.Likes.Count,
-                    CommentCount = item.Comments.Count
+                    CommentCount = item.Comments.Count,
+                    HasVideo = item.HasVideo,
+                    MediaUrl = item.MediaUrl
                 }).ToList(),
                 UserRequests = requests,
                 HighResImageLink = user.HighResImageLink,
                 LowResImageLink = user.LowResImageLink,
                 ProfileBackgroundImagelink = user.ProfileBackgroundImagelink,
                 IsFollowing = isFollowing,
-                Intro = user.Intro
+                Intro = user.Intro,
             };
             
             return Ok(response);
@@ -150,8 +152,6 @@ namespace SocialApp.Controllers.v1
             var lowResImageLink = await ProcessAndUploadImage(request.Image);
 
             var highResImageLink = await UploadImageToCloudinary(request.Image.Name, request.Image);
-
-            //probably extract out into dependency
 
             user.HighResImageLink = highResImageLink;
 

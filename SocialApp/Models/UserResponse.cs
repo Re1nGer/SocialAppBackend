@@ -24,4 +24,5 @@ public class UserPostResponse
     public string LowResMediaUrl { get; set; }
     public int LikeCount { get; set; }
     public int CommentCount { get; set; }
+    public bool HasVideo { get; set; }
 }

@@ -10,8 +10,8 @@ public class PostModel
     public string MediaUrl { get; set; }
     public bool HasUserLike { get; set; }
     public bool HasUserSaved { get; set; }
+    public bool HasVideo { get; set; }
     public int LikeCount { get; set; }
     public int CommentCount { get; set; }
     public DateTime DateCreated { get; set; }
-    public string Location { get; set; }
 }

@@ -56,12 +56,13 @@ namespace SocialApp.Controllers.v1
                     Message = item.Message,
                     LikeCount = item.Likes.Count,
                     CommentCount = item.Comments.Count,
-                    MediaUrl = item.LowResMediaUrl,
+                    MediaUrl = item.HasVideo ? item.MediaUrl : item.LowResMediaUrl,
                     UserImageLink = item.User.LowResImageLink,
                     Username = item.User.Username,
                     UserId = item.UserId,
                     HasUserLike = item.Likes.Any(like => like.UserId == userId),
-                    HasUserSaved = item.PostBookmarks.Any(book => book.UserId == userId && book.UserPostId == item.Id)
+                    HasUserSaved = item.PostBookmarks.Any(book => book.UserId == userId && book.UserPostId == item.Id),
+                    HasVideo = item.HasVideo
                 })
             .ToList();
 
