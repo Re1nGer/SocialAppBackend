@@ -46,7 +46,7 @@ namespace SocialApp.Controllers.v1
                 .Include(item => item.Likes)
                 .Include(item => item.Comments)
                 .Include(item => item.User)
-                .Where(item => followingIds.Contains(item.UserId))
+                .Where(item => followingIds.Contains(item.UserId) || item.UserId == userId)
                 .OrderByDescending(item => item.CreatedAt)
                 .Take(10);
             
@@ -61,7 +61,7 @@ namespace SocialApp.Controllers.v1
                     Username = item.User.Username,
                     UserId = item.UserId,
                     HasUserLike = item.Likes.Any(like => like.UserId == userId),
-                    HasUserSaved = item.PostBookmarks.Any(book => book.UserId == userId && book.UserPostId == item.Id),
+                    HasUserSaved = item.PostBookmarks.Any(book => book.UserId == userId || book.UserPostId == item.Id),
                     HasVideo = item.HasVideo
                 })
             .ToList();
