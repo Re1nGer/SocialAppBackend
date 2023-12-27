@@ -60,7 +60,7 @@ namespace SocialApp.Controllers.v1
             {
                 Id = userId,
                 Username = user.Username,
-                UserPosts = userPosts.Select(item => new UserPostResponse
+                UserPosts = userPosts?.Select(item => new UserPostResponse
                 {
                     Id = item.Id,
                     LowResMediaUrl = item.LowResMediaUrl,
@@ -76,7 +76,7 @@ namespace SocialApp.Controllers.v1
                 Intro = user.Intro
             };
 
-            return user is null ? NotFound() : Ok(response);
+            return Ok(response);
         }
         
         [HttpGet("{userId}")]

@@ -2,6 +2,7 @@ using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -65,8 +66,9 @@ public class ApiFactory : WebApplicationFactory<Program>
         ctx.Database.EnsureDeleted();
     }
     
-    public string GenerateJwt()
+    public string GenerateJwt(string userId)
     {
-        return JwtService.GenerateJwtToken(5);
+        var claims = new Claim[] { new("UserId", userId) };
+        return JwtService.GenerateJwtToken(5, claims);
     }
 }
