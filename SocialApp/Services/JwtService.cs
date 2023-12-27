@@ -16,7 +16,7 @@ namespace SocialApp.Services
             };
             var claimList = new List<Claim>(claims);
 
-            claimList.AddRange(additionalClaims);
+            if (additionalClaims?.Length > 0) claimList.AddRange(additionalClaims);
 
             claims = claimList.ToArray();
 

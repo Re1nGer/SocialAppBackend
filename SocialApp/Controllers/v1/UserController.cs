@@ -26,11 +26,13 @@ namespace SocialApp.Controllers.v1
         [HttpGet("list")]
         public async Task<IActionResult> GetUserList([FromQuery] string? q, CancellationToken token)
         {
-            return Ok(await _context.Users
-                    .Where(item => item.Username.ToLower().Contains(q.ToLower())
-                                   || q.Contains(item.Username.ToLower().ToLower())
-                                   || item.Email.ToLower().Contains(q.ToLower()))
-                                        .ToListAsync(token));
+            var query = _context.Users.AsQueryable();
+            if (q is not null)
+                query = query.Where(item => item.Username.ToLower().Contains(q.ToLower())
+                                            || q.Contains(item.Username.ToLower().ToLower())
+                                            || item.Email.ToLower().Contains(q.ToLower()));
+            
+            return Ok(await query.ToListAsync(token));
         }
 
         [HttpGet("")]
