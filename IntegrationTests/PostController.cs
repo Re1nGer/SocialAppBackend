@@ -27,7 +27,9 @@ public class PostControllerTest
     public async Task GetPostList_ReturnsCorrectPostList()
     {
         //Arrange
-        var userId = new Guid();
+        var postId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        
         using (var scope = _factory.Services.CreateScope())
         {
             var database = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -38,9 +40,25 @@ public class PostControllerTest
                 Email = "test@domain.com",
                 Username = "testUsername",
                 RegisteredAt = DateTime.UtcNow,
+                HighResImageLink = "highResImageLink.jpg",
+                LowResImageLink = "lowResImageLink.jpg",
+                ProfileBackgroundImagelink = "profileBackgroundImageLink.jpg",
+                Intro = "This is a test user.",
+            };
+            
+            var post = new UserPost
+            {
+                Id = postId,
+                LowResMediaUrl = "Some Dummy Url",
+                Message = "Some Message",
+                CreatedAt = DateTime.UtcNow,
+                User = user,
+                UserId = userId
             };
 
             await database.Users.AddAsync(user);
+            
+            await database.UserPosts.AddAsync(post);
 
             await database.SaveChangesAsync();
         }
@@ -58,12 +76,12 @@ public class PostControllerTest
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var userList = JsonConvert.DeserializeObject<List<User>>(responseString);
+        var userList = JsonConvert.DeserializeObject<List<PostModel>>(responseString);
 
         // Assert
         userList.Should().NotBeNull();
 
-        userList.Should().ContainSingle(user => user.Email == "test@domain.com" && user.Username == "testUsername");
+        userList.Should().ContainSingle(post => post.Message == "Some Message" && post.MediaUrl == "Some Dummy Url");
     }
 }
     
